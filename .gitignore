@@ -1,0 +1,18 @@
+# VSCode設定（チームで共有不要なら無視）
+.vscode/
+
+# 環境変数
+01_chainlitTest/.env
+
+# チャット履歴
+01_chainlitTest/chatlogs/**
+!01_chainlitTest/chatlogs/.gitkeep
+
+# 自動生成されるChainlit関連
+01_chainlitTest/.chainlit/
+
+
+# Pythonのバイトコードキャッシュ
+__pycache__/
+*.pyc
+
