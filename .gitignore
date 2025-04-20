@@ -1,6 +1,13 @@
+#============================#   共通    #============================#
+
 # VSCode設定（チームで共有不要なら無視）
 .vscode/
 
+# Pythonのバイトコードキャッシュ
+__pycache__/
+*.pyc
+
+#============================#  01_chainlitTest     #============================#
 # 環境変数
 01_chainlitTest/.env
 
@@ -12,7 +19,38 @@
 01_chainlitTest/.chainlit/
 
 
-# Pythonのバイトコードキャッシュ
-__pycache__/
-*.pyc
+#============================#  02_electronTest     #============================#
+# npm install で再構築可能
+02_electronTest/node_modules/
 
+# Electronが自動生成するバイナリやキャッシュの一時ファイル
+02_electronTest/dist/
+02_electronTest/out/
+
+
+# 環境変数
+02_electronTest/.env
+
+
+#============================#  03_chainlit-electron-playground     #============================#
+# chainlit
+03_chainlit-electron-playground/.env
+
+# チャット履歴
+03_chainlit-electron-playground/chatlogs/**
+!03_chainlit-electron-playground/chatlogs/.gitkeep
+
+# 自動生成されるChainlit関連
+03_chainlit-electron-playground/.chainlit/
+
+# Electron
+# npm install で再構築可能
+03_chainlit-electron-playground\electron\node_modules
+
+# Electronが自動生成するバイナリやキャッシュの一時ファイル
+03_chainlit-electron-playground/dist/
+03_chainlit-electron-playground/out/
+
+
+# 環境変数
+03_chainlit-electron-playground/.env

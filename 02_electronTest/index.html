@@ -1,0 +1,32 @@
+<!DOCTYPE html><html lang="ja"><head>
+    <meta charset="UTF-8">
+    <title>ファイル読込みデモ</title>
+  </head><body>
+    <h1>JSON 読込みサンプル</h1>
+    <button id="open">ファイルを開く</button>
+    <div id="result"></div>
+
+    <!-- 例：最小・最大・閉じるボタンの作成 -->
+    <div class="title-bar">
+      <button id="min-btn">最小</button>
+      <button id="max-btn">最大</button>
+      <button id="close-btn">閉じる</button>
+    </div>
+
+    <h2>🧪 IPC 通信テスト</h2>
+
+    <button id="send-on">ipcMain.on()</button>
+    <button id="send-once">ipcMain.once()</button>
+    <button id="send-invoke">invoke/handle</button>
+
+    <h2>💻ブラウザアクセス</h2>
+    <input id="url-input" type="text" placeholder="https://example.com" size="50" />
+    <button id="load-btn">表示</button>
+
+  
+    <h3>📋 イベントログ</h3>
+    <ul id="log-area"></ul>
+
+    <!-- Renderer ロジック -->
+    <script src="renderer.js"></script>
+  </body></html>

@@ -1,0 +1,30 @@
+#============================#   共通    #============================#
+
+# VSCode設定（チームで共有不要なら無視）
+.vscode/
+
+# Pythonのバイトコードキャッシュ
+__pycache__/
+*.pyc
+
+#============================#  01_chainlitTest     #============================#
+# 環境変数
+.env
+
+# チャット履歴
+chainlit_app/chatlogs/**
+!chainlit_app/chatlogs/.gitkeep
+
+# 自動生成されるChainlit関連
+chainlit_app/.chainlit
+
+
+#============================#  02_electronTest     #============================#
+# npm install で再構築可能
+electron/node_modules
+
+# Electronが自動生成するバイナリやキャッシュの一時ファイル
+dist/
+out/
+chainlit_app\.files
+electron-chainlit.log

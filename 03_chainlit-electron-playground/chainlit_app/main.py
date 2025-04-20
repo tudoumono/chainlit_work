@@ -1,0 +1,235 @@
+"""
+main.py － Chainlit + OpenAI チャットアプリ
+=========================================
+このファイルを実行すると、ブラウザでチャット UI が立ち上がります。
+利用者は「GPT‑3.5 / GPT‑4 / GPT‑4o」を途中でも自由に切り替えて対話できます。
+
+--------------------------------------------------------------------------
+💡 “ざっくり全体像”
+--------------------------------------------------------------------------
+1. **初期化**      : 環境変数を読み込み、OpenAI クライアントを作成
+2. **モデル選択UI**: 起動時にボタンを表示（`show_model_selection()`）
+3. **チャット処理**: ユーザー発言を受け取り、OpenAI へ問合せて返却
+4. **履歴保存**    : 「保存」ボタンで JSON にエクスポート
+5. **モデル変更**  : いつでも「モデル変更」ボタンで再選択できる
+6. **停止・再開**  : ⏹ で生成中断、▶ で続きから再開   ★今回追加！
+
+※ なるべく **非エンジニアでも読めるよう**、専門用語を噛み砕きつつ
+   コード内コメントを多めに入れています。
+"""
+
+# ────────────────────────────────────────────────────────────────
+# 0. ライブラリの読み込み
+# ────────────────────────────────────────────────────────────────
+import os, json
+from datetime import datetime
+from pathlib import Path
+
+# ▼ サードパーティ（外部）ライブラリ
+from dotenv import load_dotenv           # .env から変数を読むお手軽ユーティリティ
+import chainlit as cl                    # チャットUIを超簡単に作れるフレームワーク
+from openai import AsyncOpenAI           # OpenAI (GPT など) とやり取りする公式クライアント
+
+# ────────────────────────────────────────────────────────────────
+# 1. 初期設定
+# ────────────────────────────────────────────────────────────────
+load_dotenv()                            # .env ファイルから環境変数を取り込む
+DEBUG_MODE = os.getenv("DEBUG_MODE") == "1"
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+# ここではクライアントの初期化はまだしない（APIキーがないかもしれないため）
+client = None
+if OPENAI_API_KEY:
+    client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+
+
+# ────────────────────────────────────────────────────────────────
+# 2. “どのGPTを使うか” のリスト定義
+# ────────────────────────────────────────────────────────────────
+MODELS = [
+    ("GPT‑3.5 Turbo", "gpt-3.5-turbo"),   # 軽量・高速・低価格
+    ("GPT‑4 Turbo",   "gpt-4-turbo"),     # GPT‑4ベースで高速・安価
+    ("GPT‑4o",        "gpt-4o"),          # 最新・マルチモーダル
+]
+get_prefix = lambda: "🛠️【デバッグモード】\n" if DEBUG_MODE else ""
+
+# ────────────────────────────────────────────────────────────────
+# 3. 共通アクション（保存・モデル変更・停止・再開） ★追加あり
+# ────────────────────────────────────────────────────────────────
+def common_actions(show_resume: bool = False):
+    """画面下に並べるボタンを共通関数で管理（DRY）"""
+    base = [
+        cl.Action(name="save",          label="保存",        payload={"action": "save"}),
+        cl.Action(name="change_model",  label="モデル変更",  payload={"action": "change_model"}),
+        cl.Action(name="cancel",        label="⏹ 停止",      payload={"action": "cancel"}),
+                cl.Action(name="shutdown",label="🔴 プロセス完全終了",     payload={"action": "shutdown"}),
+    ]
+    # 停止後にだけ「▶ 続き」ボタンを出す
+    if show_resume:
+        base.append(cl.Action(name="resume", label="▶ 続き", payload={"action": "resume"}))
+    return base
+
+# ────────────────────────────────────────────────────────────────
+# 4. モデル選択UI
+# ────────────────────────────────────────────────────────────────
+async def show_model_selection():
+    await cl.Message(
+        content=f"{get_prefix()}🧠 使用するモデルを選んでください：",
+        actions=[
+            cl.Action(name="select_model", label=label, payload={"model": val})
+            for label, val in MODELS
+        ],
+    ).send()
+
+# ────────────────────────────────────────────────────────────────
+# 5. OpenAI へ質問を投げる関数
+# ────────────────────────────────────────────────────────────────
+async def ask_openai(user_message: str,
+                     history: list[dict],
+                     model: str,
+                     temperature: float = 0.7,
+                     max_tokens: int = 1024):
+    """
+    * 普段:   OpenAI に問い合わせ、ストリーミングで返す
+    * デバッグ: ダミー文字列を返す
+    """
+    if DEBUG_MODE:
+        async def fake_stream():
+            for chunk in ["（デバッグ）", "これは ", "OpenAI を ", "呼び出して ", "いません。"]:
+                yield type("Chunk", (), {
+                    "choices": [type("Choice", (), {
+                        "delta": type("Delta", (), {"content": chunk})()
+                    })()]
+                })()
+        return fake_stream()
+
+    messages = history + [{"role": "user", "content": user_message}]
+    return await client.chat.completions.create(
+        model=model,
+        messages=messages,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        stream=True,
+    )
+
+# ────────────────────────────────────────────────────────────────
+# 6. Chainlit イベントハンドラ
+# ────────────────────────────────────────────────────────────────
+@cl.on_chat_start
+async def start():
+    if not OPENAI_API_KEY:
+        # 🔽 UI側に警告を表示
+        await cl.Message(
+            content="❌ **OpenAI APIキーが設定されていません！**\n\n"
+                    "`.env` ファイルに以下のように設定してください：\n"
+                    "`OPENAI_API_KEY=sk-xxxx...`",
+        ).send()
+        return
+
+    # ✅ 通常の開始処理
+    await show_model_selection()
+
+@cl.action_callback("change_model")
+async def change_model(_):
+    await show_model_selection()
+
+@cl.action_callback("select_model")
+async def model_selected(action: cl.Action):
+    cl.user_session.set("selected_model", action.payload["model"])
+    await cl.Message(
+        content=f"{get_prefix()}✅ モデル「{action.payload['model']}」を選択しました。質問をどうぞ！",
+        actions=common_actions(),
+    ).send()
+
+# ★ 停止ボタン
+@cl.action_callback("cancel")
+async def cancel_stream(_):
+    cl.user_session.set("cancel_flag", True)
+    await cl.Message(content="⏹ 生成を停止します…", actions=common_actions(show_resume=True)).send()
+
+# ★ 再開ボタン
+@cl.action_callback("resume")
+async def resume_stream(_):
+    last_user_msg = cl.user_session.get("last_user_msg")
+    if not last_user_msg:
+        await cl.Message(content="再開できる会話が見つかりません。").send()
+        return
+    # 「続きからお願いします」を追加して再度 ask_openai
+    await on_message(cl.Message(content="続きからお願いします。", author="user", id="resume"), resume=True)
+
+# ★ 保存ボタン（既存）
+@cl.action_callback("save")
+async def save_history(_):
+    history = cl.user_session.get("chat_history", [])
+    if not history:
+        return
+    out_dir = Path("chatlogs"); out_dir.mkdir(exist_ok=True)
+    fp = out_dir / f"session_{datetime.now():%Y%m%d_%H%M%S}.json"
+    fp.write_text(json.dumps(history, indent=2, ensure_ascii=False), encoding="utf-8")
+    await cl.Message(content="このチャネルでのやり取りを保存しました。",
+                     elements=[cl.File(name=fp.name, path=str(fp), display="inline")]).send()
+
+# ★ プロセス完全終了ボタン
+@cl.action_callback("shutdown")
+async def shutdown_app(_):
+    await cl.Message(content="🔴 サーバーを終了します…").send()
+    await cl.sleep(0.1)           # メッセージ送信猶予
+    os._exit(0)                   # 即プロセス終了（SystemExitを無視して強制終了）
+
+# メインのメッセージハンドラ
+@cl.on_message
+async def on_message(msg: cl.Message, resume: bool = False):
+    """
+    resume=True のときは「続きからお願いします」などの内部呼び出し用
+    """
+    # -- 事前リセットと履歴処理 ------------------------------
+    cl.user_session.set("cancel_flag", False)             # ★ 停止フラグを毎回リセット
+    history = cl.user_session.get("chat_history", [])
+    if not resume:                                        # 本来のユーザ入力だけ履歴に残す
+        history.append({"role": "user", "content": msg.content})
+        cl.user_session.set("last_user_msg", msg.content) # ★ 再開用に保持
+
+    model = cl.user_session.get("selected_model", "gpt-4o")
+
+    # 空メッセージを作って、あとで逐次 update()
+    stream_msg = await cl.Message(content="").send()
+
+    try:
+        stream = await ask_openai(msg.content, history, model)
+        assistant_text = ""
+
+        async for chunk in stream:
+            # ★ 停止ボタンが押されたら break
+            if cl.user_session.get("cancel_flag"):
+                await stream.aclose()     # ストリームを閉じて即終了
+                break
+
+            delta = chunk.choices[0].delta.content
+            if delta:
+                assistant_text += delta
+                stream_msg.content += delta
+                await stream_msg.update()
+
+        if not cl.user_session.get("cancel_flag"):
+            history.append({"role": "assistant", "content": assistant_text})
+
+    except Exception as e:
+        await cl.Message(content=f"❌ エラーが発生しました: {e}").send()
+
+    finally:
+        cl.user_session.set("chat_history", history)
+
+        # ★ 停止された場合は ▶ ボタンを表示、それ以外は通常ボタン
+        await cl.Message(
+            content="✅ 応答完了！次の操作を選んでください：",
+            actions=common_actions(show_resume=cl.user_session.get("cancel_flag"))
+        ).send()
+
+# ────────────────────────────────────────────────────────────────
+# 📚 参考リンク
+# ────────────────────────────────────────────────────────────────
+"""
+・Chainlit 公式ドキュメント       : https://docs.chainlit.io
+・OpenAI Chat API リファレンス   : https://platform.openai.com/docs/api-reference/chat
+・python-dotenv 使い方            : https://pypi.org/project/python-dotenv/
+"""
