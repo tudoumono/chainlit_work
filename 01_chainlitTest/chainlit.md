@@ -28,3 +28,28 @@ UI テストや API 使用量を気にせず動作確認したいときに便利
 - 有効化方法（PowerShell の例）:
   ```powershell
   $env:DEBUG_MODE="1"; poetry run chainlit run main.py
+  ```
+
+---
+
+## 💡 モデルの切り替え機能
+
+このアプリでは、チャット中いつでも使用する GPT モデルを切り替えることができます。
+
+- 初回起動時にモデル選択ボタンが表示されます。
+- チャット内の「モデル変更」ボタンからも、いつでも再選択できます。
+
+## 💬 利用可能なモデル一覧
+
+- GPT‑3.5 Turbo（軽量・低コスト）
+- GPT‑4 Turbo（高速・高性能）
+- GPT‑4o（音声・画像にも対応した最新型）
+
+---
+
+## 📚 リファレンス
+
+- [Chainlit 公式ガイド](https://docs.chainlit.io)
+- [OpenAI API](https://platform.openai.com/docs/)
+- [python-dotenv](https://pypi.org/project/python-dotenv/)
+
