@@ -23,12 +23,23 @@ const stamp   = () => new Date().toISOString().replace('T',' ').substring(0,19);
 const PORT = 8000;
 const DIR  = path.join(__dirname,'..','chainlit_app');
 const CMD  = ['run','chainlit','run','main.py','-h']; // -h=headless
-
+// const CMD = ['main.py', '-h'];  // -h はヘッドレスオプションとして維持
 let python; let killed=false;
 
 /* ---------- Chainlit 起動 ---------- */
 function startChainlit(){
   python = spawn('poetry', CMD, { cwd:DIR,  env: {CHAINLIT_CONFIG_PATH: path.join(DIR, '.chainlit', 'config.toml'), } ,shell:true });
+
+  // const pythonExe = path.join(__dirname, '..', 'python-3.12.4-embed', 'python.exe');
+  // python = spawn(pythonExe, CMD, {
+  //   cwd: DIR,
+  //   env: {
+  //     CHAINLIT_CONFIG_PATH: path.join(DIR, '.chainlit', 'config.toml'),
+  //     PYTHONHOME: path.join(__dirname, '..', 'python-3.12.4-embed'),  
+  //   },
+  //   shell: false,
+  // });
+
   const dec = b => iconv ? iconv.decode(b,'cp932') : b.toString();
   python.stdout.on('data',d=>console.log('[Chainlit]',dec(d).trim()));
   python.stderr.on('data',d=>console.error('[Chainlit★ERR]',dec(d).trim()));
@@ -49,7 +60,8 @@ function waitPort(timeout=15000){
 /* ---------- ウィンドウ生成 ---------- */
 function openUI(){
   const win=new BrowserWindow({width:1000,height:800});
-  win.loadURL(`http://localhost:${PORT}`);
+  // win.loadFile('env-editor.html');  // ローカルHTMLファイルを開く
+  win.loadURL(`http://localhost:${PORT}`);  // Chainlitを開く
 
   const killTree=()=>{
     if(killed||!python) return; killed=true;

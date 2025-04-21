@@ -10,15 +10,29 @@
   },
   "build": {
     "appId": "com.example.chainlit",
-    "productName": "ChainlitApp", 
+    "productName": "ChainlitApp",
     "win": {
       "target": [
         {
-          "target": "portable", 
-          "arch": ["x64"]       
+          "target": "portable",
+          "arch": ["x64"]
         }
       ]
-    }
+    },
+    "asarUnpack": [
+      "**/python-3.12.4-embed/**",
+      "**/chainlit_app/**"
+    ],
+    "extraResources": [
+      {
+        "from": "../python-3.12.4-embed",
+        "to": "python-3.12.4-embed"
+      },
+      {
+        "from": "../chainlit_app",
+        "to": "chainlit_app"
+      }
+    ]
   },
   "devDependencies": {
     "@electron-forge/cli": "^7.8.0",

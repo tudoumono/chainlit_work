@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head><meta charset="UTF-8"><title>.env 編集</title></head>
+<body>
+  <h1>.env 編集</h1>
+  <textarea id="env" rows="10" cols="80"></textarea><br>
+  <button onclick="saveEnv()">保存</button>
+  <button onclick="startChat()">Chatを開始</button>
+  <p id="status"></p>
+
+  <script>
+    const { ipcRenderer } = window.electronAPI;
+
+    window.onload = async () => {
+      const content = await ipcRenderer.invoke('read-env');
+      document.getElementById('env').value = content;
+    };
+
+    async function saveEnv() {
+      const content = document.getElementById('env').value;
+      await ipcRenderer.invoke('write-env', content);
+      document.getElementById('status').innerText = "保存しました";
+    }
+
+    async function startChat() {
+      const ok = await ipcRenderer.invoke('start-chainlit');
+      if (ok) location.href = 'http://localhost:8000';  // Chainlit に遷移
+      else alert("Chainlit 起動に失敗しました");
+    }
+  </script>
+</body>
+</html>
