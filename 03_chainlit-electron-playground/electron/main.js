@@ -71,6 +71,15 @@ app.whenReady().then(async()=>{
 
 app.on('window-all-closed',()=>{ if(python&&!killed) treeKill(python.pid); app.quit(); });
 
+
+
+
+
+
+
+
+
+
 /* 参考
  * tree-kill : https://github.com/pkrumins/node-tree-kill
  * child_process.spawn : https://nodejs.org/api/child_process.html

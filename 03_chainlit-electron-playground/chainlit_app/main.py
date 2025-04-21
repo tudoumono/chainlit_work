@@ -120,9 +120,13 @@ async def start():
     if not OPENAI_API_KEY:
         # 🔽 UI側に警告を表示
         await cl.Message(
-            content="❌ **OpenAI APIキーが設定されていません！**\n\n"
+            content="❌ **OpenAI APIキーが設定されていません！**\n"
                     "`.env` ファイルに以下のように設定してください：\n"
-                    "`OPENAI_API_KEY=sk-xxxx...`",
+                    "`OPENAI_API_KEY=\"sk-xxxx...\"`\n"
+                    "（デバッグ）これは OpenAI を 呼び出して いません。\n"
+                    "質問を入力してください。\n"
+                    ,
+            actions=common_actions(),
         ).send()
         return
 

@@ -7,6 +7,8 @@
 __pycache__/
 *.pyc
 
+python-3.12.4-embed-amd64
+
 #============================#  01_chainlitTest     #============================#
 # 環境変数
 .env
@@ -18,6 +20,13 @@ chainlit_app/chatlogs/**
 # 自動生成されるChainlit関連
 chainlit_app/.chainlit
 
+# Nuitka自動生成される
+chainlit_app/main.build
+chainlit_app/main.dist
+chainlit_app/.files
+chainlit_app/main.onefile-build
+chainlit_app/main.exe
+chainlit_app/nuitka-crash-report.xml
 
 #============================#  02_electronTest     #============================#
 # npm install で再構築可能
