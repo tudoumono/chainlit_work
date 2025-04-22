@@ -7,7 +7,7 @@
  */
 
 // 必要なモジュールの読み込み
-const { app, BrowserWindow, ipcMain, shell, Menu } = require('electron'); // Electronの主要機能（Menuを追加）
+const { app, BrowserWindow, ipcMain, shell, Menu, dialog } = require('electron'); // Electronの主要機能（Menuを追加）
 const { spawn } = require('child_process'); // 子プロセス（Python）を起動するため
 const net = require('net'); // ネットワーク接続確認用
 const path = require('path'); // ファイルパス操作用
@@ -27,14 +27,16 @@ const PORT = 8000; // Chainlitサーバーのポート番号
 
 // パス設定 - アプリがパッケージ化されているかどうかで変わる
 const isPackaged = app.isPackaged; // 本番ビルドかどうか
+
+// 実行ファイルのディレクトリを取得
+const EXE_DIR = path.dirname(process.execPath);
 const BASE_PATH = isPackaged ? path.join(process.resourcesPath) : path.join(__dirname, '..'); // ベースパス
 const DIR = path.join(BASE_PATH, 'chainlit_app'); // Chainlitアプリのディレクトリ
 const PY_EMBED = path.join(BASE_PATH, 'python-3.12.4-embed', 'python.exe'); // 埋め込みPythonの実行ファイル
 
-// ユーザーデータディレクトリ設定（設定やログの保存先）
-const USER_DATA_DIR = app.getPath('userData'); // Electronが提供するユーザーデータ保存場所
-const ENV_DIR = path.join(USER_DATA_DIR, 'env'); // 環境変数ファイル保存ディレクトリ
-const LOG_DIR = path.join(USER_DATA_DIR, 'logs'); // ログ保存ディレクトリ
+// 設定ファイルとログファイルを実行ファイルのディレクトリに保存
+const ENV_DIR = path.join(EXE_DIR, 'env'); // 環境変数ファイル保存ディレクトリ
+const LOG_DIR = path.join(EXE_DIR, 'logs'); // ログ保存ディレクトリ
 
 // 必要なディレクトリが存在しない場合は作成
 if (!fs.existsSync(ENV_DIR)) {
@@ -45,23 +47,21 @@ if (!fs.existsSync(LOG_DIR)) {
 }
 
 // 環境変数ファイルのパス設定
-const ENV_PATH = isPackaged 
-  ? path.join(ENV_DIR, '.env') // 本番環境ではユーザーデータディレクトリに
-  : path.join(DIR, '.env'); // 開発環境ではアプリディレクトリに
+const ENV_PATH = path.join(ENV_DIR, '.env');
 
 const LOG_PATH = path.join(LOG_DIR, 'chainlit.log'); // ログファイルのパス
 
-// 初回起動時、開発環境の.envをユーザーデータディレクトリにコピー
+// 初回起動時、開発環境の.envをEXE_DIRにコピー
 if (isPackaged && !fs.existsSync(ENV_PATH)) {
   try {
     const defaultEnvPath = path.join(DIR, '.env');
     if (fs.existsSync(defaultEnvPath)) {
       fs.copyFileSync(defaultEnvPath, ENV_PATH); // デフォルト設定をコピー
-      console.log('Default .env file copied to user data directory');
+      console.log('Default .env file copied to exe directory');
     } else {
       // デフォルト環境がない場合は空ファイルを作成
       fs.writeFileSync(ENV_PATH, '', 'utf8');
-      console.log('Created empty .env file in user data directory');
+      console.log('Created empty .env file in exe directory');
     }
   } catch (err) {
     console.error('Error initializing .env file:', err);
@@ -92,6 +92,15 @@ ipcMain.handle('write-env', async (_, content) => {
   }
 });
 
+// パス情報取得 (レンダラープロセスからの要求に対応)
+ipcMain.handle('get-paths', async () => {
+  return {
+    envPath: ENV_PATH,
+    logPath: LOG_PATH,
+    exeDir: EXE_DIR
+  };
+});
+
 // Chainlit 起動＆待機 → 成否を返す (レンダラープロセスからの要求に対応)
 ipcMain.handle('start-chainlit', async () => {
   if (pythonProc) return true;  // 既に起動済みなら何もしない
@@ -99,7 +108,7 @@ ipcMain.handle('start-chainlit', async () => {
   // パッケージ環境では.envファイルをChainlitアプリディレクトリにコピー
   if (isPackaged) {
     try {
-      // ユーザーデータディレクトリの.envファイルをChainlitアプリディレクトリにコピー
+      // 実行ディレクトリの.envファイルをChainlitアプリディレクトリにコピー
       fs.copyFileSync(ENV_PATH, path.join(DIR, '.env'));
     } catch (err) {
       console.error('Error copying .env file to app directory:', err);
@@ -197,7 +206,7 @@ ipcMain.handle('open-chainlit', async () => {
   }
 });
 
-// .env設定画面に戻る（新規追加）
+// .env設定画面に戻る
 ipcMain.handle('return-to-settings', async () => {
   try {
     // Chainlitを終了
@@ -208,6 +217,28 @@ ipcMain.handle('return-to-settings', async () => {
     return true;
   } catch (err) {
     console.error('Error returning to settings:', err);
+    return false;
+  }
+});
+
+// ファイルを選択してログファイルを開く
+ipcMain.handle('open-log-file', async () => {
+  try {
+    shell.openPath(LOG_PATH);
+    return true;
+  } catch (err) {
+    console.error('Error opening log file:', err);
+    return false;
+  }
+});
+
+// フォルダを表示 (実行ファイルのディレクトリ)
+ipcMain.handle('show-exe-dir', async () => {
+  try {
+    shell.openPath(EXE_DIR);
+    return true;
+  } catch (err) {
+    console.error('Error opening directory:', err);
     return false;
   }
 });
@@ -272,7 +303,7 @@ function createWindow() {
   // }
 }
 
-// メニューを作成（新規追加）
+// メニューを作成
 function createMenu() {
   const template = [
     {
@@ -284,6 +315,19 @@ function createMenu() {
           click: async () => {
             killAll();
             mainWindow.loadFile(path.join(__dirname, 'env-editor.html'));
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'ログを表示',
+          click: async () => {
+            shell.openPath(LOG_PATH);
+          }
+        },
+        {
+          label: '実行ディレクトリを開く',
+          click: async () => {
+            shell.openPath(EXE_DIR);
           }
         },
         { type: 'separator' },
@@ -310,7 +354,7 @@ function createMenu() {
 // アプリケーション初期化
 app.whenReady().then(() => {
   createWindow();
-  createMenu(); // メニューを作成（追加）
+  createMenu(); // メニューを作成
   
   app.on('activate', () => {
     // macOSでは、Dockアイコンクリック時に
@@ -336,9 +380,3 @@ process.on('SIGINT', () => {
   killAll(); // Ctrl+Cなどの割り込みシグナルでプロセスを終了
   app.quit();
 });
-
-// 参考リンク
-// Electron セキュリティ: https://www.electronjs.org/docs/latest/tutorial/security
-// CSP (コンテンツセキュリティポリシー): https://developer.mozilla.org/ja/docs/Web/HTTP/CSP
-// Electron アプリケーション構造: https://www.electronjs.org/docs/latest/tutorial/application-architecture
-// Electron メニュー: https://www.electronjs.org/docs/latest/api/menu

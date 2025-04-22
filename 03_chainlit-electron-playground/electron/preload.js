@@ -14,6 +14,15 @@ contextBridge.exposeInMainWorld('api', {
   // Chainlitページを開く
   openChainlit: () => ipcRenderer.invoke('open-chainlit'),
   
-  // 設定画面に戻る（新規追加）
-  returnToSettings: () => ipcRenderer.invoke('return-to-settings')
+  // 設定画面に戻る
+  returnToSettings: () => ipcRenderer.invoke('return-to-settings'),
+  
+  // パス情報の取得
+  getPaths: () => ipcRenderer.invoke('get-paths'),
+  
+  // ログファイルを開く
+  openLogFile: () => ipcRenderer.invoke('open-log-file'),
+  
+  // 実行ディレクトリを表示
+  showExeDir: () => ipcRenderer.invoke('show-exe-dir')
 });

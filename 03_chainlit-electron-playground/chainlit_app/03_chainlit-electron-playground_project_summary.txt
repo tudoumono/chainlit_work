@@ -47,62 +47,81 @@
 ### chainlit_app\chainlit.md
 
 ```
-# 💬 このアプリの使い方
+# Chainlit チャットアプリケーション ガイド
 
-ようこそ！このアプリは OpenAI API を活用した対話アシスタントです。  
-下記の手順で簡単にご利用いただけます。
+このドキュメントでは、Chainlit Electronアプリケーションの使い方について説明します。
 
----
+## 概要
 
-## ✅ 使い方ガイド
+このアプリケーションは、AIチャットボットを簡単に利用できるようにするためのデスクトップアプリケーションです。大きく分けて以下の2つの画面があります：
 
-1. **質問を入力**
-   - 画面下部の入力欄に質問やリクエストを入力してください。
-   - 例：`Pythonでリストを逆順にする方法は？`
+1. **環境設定画面** - APIキーなどの設定を行う画面
+2. **チャット画面** - AIと会話を行う画面
 
-2. **Enterキーを押して送信**
-   - アシスタントが回答をストリーミング形式で返します。
+## 環境設定画面の使い方
 
-3. **「保存」ボタンで会話をダウンロード（任意）**
-   - 会話履歴は JSON 形式で保存できます。
-   - ログは `chatlogs/` フォルダに自動で格納されます。
+### 必要な設定
 
----
+環境設定画面では、APIキーなどの必要な情報を設定します。主な設定項目は以下の通りです：
 
-## 🛠️ デバッグモードについて（開発者向け）
+```
+OPENAI_API_KEY="あなたのOpenAI APIキー"
+DEBUG_MODE=1
+```
 
-このアプリには「デバッグモード」があり、OpenAI にアクセスせず**ダミー応答**を返すことができます。  
-UI テストや API 使用量を気にせず動作確認したいときに便利です。
+### 設定の保存
 
-- 有効化方法（PowerShell の例）:
-  ```powershell
-  $env:DEBUG_MODE="1"; poetry run chainlit run main.py
-  ```
+1. 必要な情報を入力したら「保存」ボタンをクリックして設定を保存できます
+2. 「保存 & Chatを開始」ボタンをクリックすると、設定を保存してチャット画面に移動します
 
----
+## チャット画面の使い方
 
-## 💡 モデルの切り替え機能
+### 基本的な操作
 
-このアプリでは、チャット中いつでも使用する GPT モデルを切り替えることができます。
+1. 画面下部のテキストボックスにメッセージを入力します
+2. Enterキーを押すか送信ボタンをクリックして、メッセージを送信します
+3. AIからの返答が表示されるまで少し待ちます
+4. 会話は画面上部に履歴として表示されます
 
-- 初回起動時にモデル選択ボタンが表示されます。
-- チャット内の「モデル変更」ボタンからも、いつでも再選択できます。
+### 設定画面に戻る
 
-## 💬 利用可能なモデル一覧
+チャット画面から設定画面に戻るには、以下のいずれかの方法を使用します：
 
-- GPT‑3.5 Turbo（軽量・低コスト）
-- GPT‑4 Turbo（高速・高性能）
-- GPT‑4o（音声・画像にも対応した最新型）
+- メニューバーの「ファイル」→「設定に戻る」を選択
+- キーボードショートカット「Ctrl+,」（Macでは「Cmd+,」）を使用
 
----
+これにより、Chainlitサーバーが終了し、環境設定画面に戻ります。
 
-## 📚 リファレンス
+### 特別な機能
 
-- [Chainlit 公式ガイド](https://docs.chainlit.io)
-- [OpenAI API](https://platform.openai.com/docs/)
-- [python-dotenv](https://pypi.org/project/python-dotenv/)
+- **ファイルのアップロード**: チャット画面でファイルをアップロードすると、AIがその内容を理解して回答できます
+- **コードの実行**: コードブロックを送信すると、AIは適切な言語を検出し、構文ハイライトを適用します
+- **マークダウン形式**: AIの回答はマークダウン形式で表示され、読みやすく整形されます
 
+## よくある質問
 
+### Q: APIキーはどこで取得できますか？
+
+A: OpenAI APIキーは、[OpenAIのウェブサイト](https://platform.openai.com/)でアカウントを作成し、APIセクションから取得できます。
+
+### Q: チャットの履歴は保存されますか？
+
+A: チャットの履歴はアプリケーションを終了すると消去されます。必要な情報は別途保存してください。
+
+### Q: アプリケーションが応答しなくなった場合はどうすればよいですか？
+
+A: アプリケーションを一度終了し、再起動してみてください。問題が解決しない場合は、環境設定を確認するか、ログファイルを確認してください。
+
+### Q: オフラインでも使用できますか？
+
+A: このアプリケーションはAIサービス（OpenAIなど）に接続するためにインターネット接続が必要です。
+
+## ヒントとコツ
+
+- 質問は具体的に、明確に記述すると良い回答が得られやすくなります
+- 長い会話の履歴があると、AIはコンテキストを理解しやすくなります
+- APIキーは定期的に更新することをお勧めします
+- 機密情報や個人情報は共有しないようにしてください
 ```
 
 ### chainlit_app\main.py
@@ -4487,74 +4506,130 @@ build-backend = "poetry.core.masonry.api"
 ### chainlit_app\README.md
 
 ```
-# 📁 プロジェクト構成
+# Chainlit Electron アプリケーション
 
-| ファイル / ディレクトリ | 説明 |
-|--------------------------|------|
-| `main.py` | Chainlit アプリのメインスクリプト。ユーザー入力を受け取り、OpenAI API またはデバッグ応答で返答します。チャット履歴の保存にも対応。 |
-| `pyproject.toml` | Poetry 用の設定ファイル。プロジェクト名、Pythonバージョン、依存ライブラリなどを定義します。 |
-| `poetry.lock` | インストールされたライブラリのバージョンを固定するためのファイル。環境の再現性を保ちます。 |
-| `README.md` | プロジェクトの概要や使い方を記載する説明ファイルです。 |
-| `chainlit.md` | Chainlit 起動時のウェルカム画面に表示される内容をマークダウンで記述します。 |
-| `.chainlit/` | Chainlit により自動生成される設定ファイルや翻訳ファイルが格納されます。 |
-| `chatlogs/` | チャットの履歴が JSON 形式で保存されるディレクトリです。 |
-| `__pycache__/` | Python が自動生成するキャッシュファイルが保存されます。 |
+このアプリケーションは、Chainlit（Pythonベースのチャットアプリ）をElectronでラップしたデスクトップアプリケーションです。環境設定を簡単に行い、ワンクリックでチャットを開始できます。
 
----
+## 機能
 
-## 🧠 対応モデルと切替機能
+- 簡単な環境変数（.env）エディタ
+- ワンクリックでChainlitサーバーを起動
+- アプリ内でチャットインターフェースを表示
+- メニューから設定画面に簡単に戻れる機能
+- 安全なアプリケーション終了（すべての関連プロセスを確実に終了）
 
-このアプリでは、以下の OpenAI モデルに対応しています：
+## インストール方法
 
-- `gpt-3.5-turbo`（高速・低価格）
-- `gpt-4-turbo`（高性能・安定性重視）
-- `gpt-4o`（最新のマルチモーダルモデル）
+1. 配布されたインストーラー（.exeファイル）をダウンロードします
+2. インストーラーを実行し、画面の指示に従ってインストールを完了します
+3. インストール完了後、デスクトップまたはスタートメニューからアプリケーションを起動できます
 
-起動直後やチャット中にも、画面上の「モデル変更」ボタンで好きなタイミングで切り替え可能です。
+## 使い方
 
----
+### 初回起動時
 
-### 🧪 デバッグモード
+1. アプリケーションを起動すると、最初に環境設定（.env）画面が表示されます
+2. 必要な設定を入力します（OpenAI APIキーなど）
+3. 「保存 & Chatを開始」ボタンをクリックします
+4. Chainlitサーバーが起動し、チャットインターフェースが表示されます
 
-APIキーが不要な「デバッグモード」も用意しています。  
-環境変数 `.env` に `DEBUG_MODE=1` を指定することで、OpenAI への接続を行わず、ダミー応答が返されます。
+### 環境設定（.env）の記述方法
 
-これは PowerShell での実行例です：
+環境設定ファイル（.env）には、APIキーなどの重要な情報を記述します。正しく動作させるためには、以下のルールに従って記述してください。
 
-ありがとうございます。ご提示いただいたMarkdownのコードブロックに対して `MD031`（コードブロックの前後に空行が必要）エラーを解消するための **修正例** は以下の通りです。
+#### 記述ルール
 
----
+1. 各設定は「キー=値」の形式で記述します
+2. 行の先頭に「#」を付けるとコメント（説明文）になります
+3. 文字列（テキスト）を値として設定する場合は、ダブルクォーテーション（"）で囲みます
+4. 数値はそのまま記述します（クォーテーションで囲みません）
+5. 行の最後にはセミコロン（;）や句読点は不要です
+6. キーと値の間の「=」の前後にスペースは不要です
 
-### ✅ 修正後のMarkdown（MD031対応済み）
+#### 設定例
 
-これは PowerShell での実行例です：
+```
+# OpenAI APIキー（必須）
+OPENAI_API_KEY="sk-abcdef123456789"
 
-```bash
-# PowerShell の例
-$env:DEBUG_MODE="1"; poetry run chainlit run main.py
+# デバッグモード（1=有効、0=無効）
+DEBUG_MODE=1
+
+# モデル設定
+MODEL_NAME="gpt-4"
+MAX_TOKENS=2000
+
+# アプリの表示名
+APP_TITLE="マイAIアシスタント"
 ```
 
-ダミー応答は以下のように送信されます：
+#### よくある記述ミス
 
-```bash
-（デバッグ）これは OpenAI を 呼び出して いません。
+❌ 間違った記述:
+```
+OPENAI_API_KEY = "sk-abcdef123456789";  # =の前後にスペース、行末にセミコロン
+model name = gpt-4                       # キーにスペース、値にクォーテーションがない
+"DEBUG_MODE"="1"                         # キーをクォーテーションで囲っている
 ```
 
----
+✅ 正しい記述:
+```
+OPENAI_API_KEY="sk-abcdef123456789"
+MODEL_NAME="gpt-4"
+DEBUG_MODE=1
+```
 
-### 📝 チャット履歴の保存
+#### 重要なポイント
 
-- 「保存」ボタンをクリックすることで、やり取りを `chatlogs/` ディレクトリに JSON 形式で保存できます。
-- ファイル名にはセッション日時が含まれます（例：`session_20250420_123456.json`）
+- APIキーは必ず **ダブルクォーテーション** で囲んでください
+- キー名は **大文字** で記述するのが一般的です
+- キー名にスペースを含めないでください
+- 値にスペースが含まれる場合は、必ずダブルクォーテーションで囲んでください
 
----
+### 設定に戻る方法
 
-### 📚 参考リンク
+チャット画面から設定画面に戻るには以下のいずれかの方法を使用できます：
 
-- [Chainlit 公式ドキュメント](https://docs.chainlit.io)
-- [OpenAI Chat API リファレンス](https://platform.openai.com/docs/api-reference/chat)
-- [python-dotenv 公式](https://pypi.org/project/python-dotenv/)
+- メニューバーの「ファイル」→「設定に戻る」を選択
+- キーボードショートカット「Ctrl+,」（Macでは「Cmd+,」）を使用
 
+### アプリの終了
+
+- ウィンドウの閉じるボタン（×）をクリックする
+- メニューバーの「ファイル」→「終了」を選択する
+
+アプリを終了すると、Chainlitサーバーを含むすべての関連プロセスが確実に終了します。
+
+## トラブルシューティング
+
+### チャットが起動しない場合
+
+1. 環境設定（.env）が正しく設定されているか確認してください
+2. アプリケーションを一度終了し、再起動してみてください
+3. ログファイルを確認してください（以下の場所にあります）:
+   - `%APPDATA%\chainlit-electron\logs\chainlit.log`（Windows）
+   - `~/Library/Application Support/chainlit-electron/logs/chainlit.log`（Mac）
+
+### .env設定で問題がある場合
+
+- APIキーが無効または空の場合、接続エラーが発生します
+- キーと値のフォーマットを確認してください（上記の「記述ルール」セクション参照）
+- 特殊文字やスペースが含まれていないか確認してください
+
+### その他の問題
+
+問題が解決しない場合は、アプリケーション提供者にお問い合わせください。
+
+## プライバシーと安全性について
+
+- このアプリケーションはローカルでのみ動作し、設定ファイルやログはお使いのコンピューター内に保存されます
+- APIキーなどの機密情報はユーザーのコンピューター上に安全に保存されます
+- ネットワーク通信は、設定されたAPIサービス（OpenAIなど）との間でのみ行われます
+
+## 更新情報
+
+- バージョン 1.0.0: 初回リリース
+- バージョン 1.1.0: セキュリティ強化、メニューバーの追加
 ```
 
 ### electron\.chainlit\config.toml
@@ -7652,38 +7727,39 @@ To modify the welcome screen, edit the `chainlit.md` file at the root of your pr
  *   tree-kill で親子プロセスを強制終了
  */
 
-// const { app, BrowserWindow, ipcMain, shell } = require('electron');
-const { app, BrowserWindow, ipcMain, shell, Menu } = require('electron');
-
-const { spawn } = require('child_process');
-const net = require('net');
-const path = require('path');
-const fs = require('fs');
-const treeKill = require('tree-kill');
+// 必要なモジュールの読み込み
+const { app, BrowserWindow, ipcMain, shell, Menu } = require('electron'); // Electronの主要機能（Menuを追加）
+const { spawn } = require('child_process'); // 子プロセス（Python）を起動するため
+const net = require('net'); // ネットワーク接続確認用
+const path = require('path'); // ファイルパス操作用
+const fs = require('fs'); // ファイル操作用
+const treeKill = require('tree-kill'); // プロセスツリー全体を終了させるため
 
 // Squirrelイベントチェック（Windows用インストーラー関連）
+// Windows向けインストーラーの処理中なら、アプリを終了
 if (require('electron-squirrel-startup')) app.quit();
 
-let pythonProc = null;
-let killed = false;
-let mainWindow = null;
+// グローバル変数の初期化
+let pythonProc = null; // Pythonプロセスを格納する変数
+let killed = false; // プロセスが意図的に終了されたかどうか
+let mainWindow = null; // メインウィンドウオブジェクト
 
-const PORT = 8000;
+const PORT = 8000; // Chainlitサーバーのポート番号
 
 // パス設定 - アプリがパッケージ化されているかどうかで変わる
-const isPackaged = app.isPackaged;
-const BASE_PATH = isPackaged ? path.join(process.resourcesPath) : path.join(__dirname, '..');
-const DIR = path.join(BASE_PATH, 'chainlit_app');
-const PY_EMBED = path.join(BASE_PATH, 'python-3.12.4-embed', 'python.exe');
+const isPackaged = app.isPackaged; // 本番ビルドかどうか
+const BASE_PATH = isPackaged ? path.join(process.resourcesPath) : path.join(__dirname, '..'); // ベースパス
+const DIR = path.join(BASE_PATH, 'chainlit_app'); // Chainlitアプリのディレクトリ
+const PY_EMBED = path.join(BASE_PATH, 'python-3.12.4-embed', 'python.exe'); // 埋め込みPythonの実行ファイル
 
-// ユーザーデータディレクトリ設定
-const USER_DATA_DIR = app.getPath('userData');
-const ENV_DIR = path.join(USER_DATA_DIR, 'env');
-const LOG_DIR = path.join(USER_DATA_DIR, 'logs');
+// ユーザーデータディレクトリ設定（設定やログの保存先）
+const USER_DATA_DIR = app.getPath('userData'); // Electronが提供するユーザーデータ保存場所
+const ENV_DIR = path.join(USER_DATA_DIR, 'env'); // 環境変数ファイル保存ディレクトリ
+const LOG_DIR = path.join(USER_DATA_DIR, 'logs'); // ログ保存ディレクトリ
 
 // 必要なディレクトリが存在しない場合は作成
 if (!fs.existsSync(ENV_DIR)) {
-  fs.mkdirSync(ENV_DIR, { recursive: true });
+  fs.mkdirSync(ENV_DIR, { recursive: true }); // 再帰的に（親ディレクトリも含めて）作成
 }
 if (!fs.existsSync(LOG_DIR)) {
   fs.mkdirSync(LOG_DIR, { recursive: true });
@@ -7691,17 +7767,17 @@ if (!fs.existsSync(LOG_DIR)) {
 
 // 環境変数ファイルのパス設定
 const ENV_PATH = isPackaged 
-  ? path.join(ENV_DIR, '.env') 
-  : path.join(DIR, '.env');
+  ? path.join(ENV_DIR, '.env') // 本番環境ではユーザーデータディレクトリに
+  : path.join(DIR, '.env'); // 開発環境ではアプリディレクトリに
 
-const LOG_PATH = path.join(LOG_DIR, 'chainlit.log');
+const LOG_PATH = path.join(LOG_DIR, 'chainlit.log'); // ログファイルのパス
 
 // 初回起動時、開発環境の.envをユーザーデータディレクトリにコピー
 if (isPackaged && !fs.existsSync(ENV_PATH)) {
   try {
     const defaultEnvPath = path.join(DIR, '.env');
     if (fs.existsSync(defaultEnvPath)) {
-      fs.copyFileSync(defaultEnvPath, ENV_PATH);
+      fs.copyFileSync(defaultEnvPath, ENV_PATH); // デフォルト設定をコピー
       console.log('Default .env file copied to user data directory');
     } else {
       // デフォルト環境がない場合は空ファイルを作成
@@ -7714,22 +7790,22 @@ if (isPackaged && !fs.existsSync(ENV_PATH)) {
 }
 
 // ── IPC ハンドラ ───────────────────────────────────────────
-// .env の読込
+// .env の読込 (レンダラープロセスからの要求に対応)
 ipcMain.handle('read-env', async () => {
   try {
     return fs.existsSync(ENV_PATH)
-      ? fs.readFileSync(ENV_PATH, 'utf8')
-      : '';
+      ? fs.readFileSync(ENV_PATH, 'utf8') // ファイルが存在すれば内容を読み込む
+      : ''; // なければ空文字を返す
   } catch (err) {
     console.error('Error reading .env:', err);
     return '';
   }
 });
 
-// .env の書込
+// .env の書込 (レンダラープロセスからの要求に対応)
 ipcMain.handle('write-env', async (_, content) => {
   try {
-    fs.writeFileSync(ENV_PATH, content, 'utf8');
+    fs.writeFileSync(ENV_PATH, content, 'utf8'); // 内容をファイルに書き込む
     return true;
   } catch (err) {
     console.error('Error writing .env:', err);
@@ -7737,7 +7813,7 @@ ipcMain.handle('write-env', async (_, content) => {
   }
 });
 
-// Chainlit 起動＆待機 → 成否を返す
+// Chainlit 起動＆待機 → 成否を返す (レンダラープロセスからの要求に対応)
 ipcMain.handle('start-chainlit', async () => {
   if (pythonProc) return true;  // 既に起動済みなら何もしない
 
@@ -7753,26 +7829,27 @@ ipcMain.handle('start-chainlit', async () => {
 
   // Python環境変数の設定
   const pythonEnv = {
-    ...process.env,
-    PYTHONHOME: path.dirname(PY_EMBED),
-    PYTHONPATH: path.join(path.dirname(PY_EMBED), 'site-packages'),
-    CHAINLIT_CONFIG_PATH: path.join(DIR, '.chainlit', 'config.toml'),
+    ...process.env, // 現在の環境変数を引き継ぐ
+    PYTHONHOME: path.dirname(PY_EMBED), // Pythonのホームディレクトリ
+    PYTHONPATH: path.join(path.dirname(PY_EMBED), 'site-packages'), // Pythonパッケージの場所
+    CHAINLIT_CONFIG_PATH: path.join(DIR, '.chainlit', 'config.toml'), // Chainlit設定ファイルの場所
     // 追加の環境変数
-    PATH: `${path.dirname(PY_EMBED)};${process.env.PATH}`
+    PATH: `${path.dirname(PY_EMBED)};${process.env.PATH}` // PATHにPythonディレクトリを追加
   };
 
   // Chainlitアプリの実行
   try {
+    // Pythonを実行し、Chainlitを起動
     pythonProc = spawn(PY_EMBED, ['-m', 'chainlit', 'run', path.join(DIR, 'main.py'), '-h'], {
-      cwd: DIR,
-      env: pythonEnv,
-      shell: false,
+      cwd: DIR, // 作業ディレクトリ
+      env: pythonEnv, // 環境変数
+      shell: false, // シェルを使わない
     });
 
     // ログファイルへの出力
-    const log = fs.createWriteStream(LOG_PATH, { flags: 'a' });
-    pythonProc.stdout.pipe(log);
-    pythonProc.stderr.pipe(log);
+    const log = fs.createWriteStream(LOG_PATH, { flags: 'a' }); // 'a'は追記モード
+    pythonProc.stdout.pipe(log); // 標準出力をログファイルに書き込む
+    pythonProc.stderr.pipe(log); // エラー出力をログファイルに書き込む
 
     // デバッグ用コンソール出力
     pythonProc.stdout.on('data', (data) => {
@@ -7798,50 +7875,50 @@ ipcMain.handle('start-chainlit', async () => {
       }
     });
 
-    // サーバー起動待機
+    // サーバー起動待機（ポートが開くまで待つ）
     await new Promise((resolve, reject) => {
       const start = Date.now();
       const iv = setInterval(() => {
-        const sock = new net.Socket();
+        const sock = new net.Socket(); // ソケット接続を試みる
         sock.once('connect', () => {
-          clearInterval(iv);
-          sock.destroy();
+          clearInterval(iv); // 接続成功したら定期チェックを停止
+          sock.destroy(); // ソケットを閉じる
           resolve();
         })
         .once('error', () => {
-          sock.destroy();
-          if (Date.now() - start > 30000) {
+          sock.destroy(); // エラー時はソケットを閉じる
+          if (Date.now() - start > 30000) { // 30秒以上経過したらタイムアウト
             clearInterval(iv);
             reject(new Error('Timeout waiting for Chainlit server'));
           }
         })
-        .connect(PORT, '127.0.0.1');
-      }, 500);
+        .connect(PORT, '127.0.0.1'); // ローカルホストの指定ポートに接続
+      }, 500); // 500ミリ秒ごとに接続チェック
     });
     
     return true;
   } catch (err) {
     console.error('Error starting/waiting for Chainlit server:', err);
-    killAll();
+    killAll(); // エラー時はプロセスを終了
     return false;
   }
 });
 
-// Chainlitページを開く
+// Chainlitページを開く (レンダラープロセスからの要求に対応)
 ipcMain.handle('open-chainlit', async () => {
   const url = `http://localhost:${PORT}`;
   try {
-    await mainWindow.loadURL(url);
+    await mainWindow.loadURL(url); // メインウィンドウにChainlitのURLを読み込む
     return true;
   } catch (err) {
     console.error('Error opening Chainlit URL:', err);
     // フォールバック：外部ブラウザで開く
-    shell.openExternal(url);
+    shell.openExternal(url); // 代わりに外部ブラウザでURLを開く
     return false;
   }
 });
 
-// .env設定画面に戻る
+// .env設定画面に戻る（新規追加）
 ipcMain.handle('return-to-settings', async () => {
   try {
     // Chainlitを終了
@@ -7856,45 +7933,15 @@ ipcMain.handle('return-to-settings', async () => {
   }
 });
 
-// Chainlitページを開く
-ipcMain.handle('open-chainlit', async () => {
-  const url = `http://localhost:${PORT}`;
-  try {
-    // 設定に戻るボタンを含むヘッダーを作成
-    const headerHeight = 40;
-    
-    // メインコンテンツ用のBrowserViewを作成
-    const contentView = new BrowserView({
-      webPreferences: {
-        preload: path.join(__dirname, 'chainlit-preload.js'),
-        nodeIntegration: false,
-        contextIsolation: true
-      }
-    });
-    
-    mainWindow.setBrowserView(contentView);
-    contentView.setBounds({ x: 0, y: headerHeight, width: mainWindow.getContentBounds().width, height: mainWindow.getContentBounds().height - headerHeight });
-    contentView.webContents.loadURL(url);
-    
-    // ヘッダー用のHTMLを表示
-    await mainWindow.loadFile(path.join(__dirname, 'header.html'));
-    
-    return true;
-  } catch (err) {
-    console.error('Error opening Chainlit URL:', err);
-    shell.openExternal(url);
-    return false;
-  }
-});
-
 // ── プロセス殺害ヘルパー ───────────────────────────────────
 function killAll() {
-  if (!pythonProc || killed) return;
+  if (!pythonProc || killed) return; // プロセスがないか既に終了済みなら何もしない
   
   console.log('Killing Chainlit process...');
   killed = true;
   
   try {
+    // treeKillはプロセスIDを指定して、そのプロセスとその子プロセスをすべて終了させる
     treeKill(pythonProc.pid, 'SIGTERM', err => {
       if (err) console.error('tree-kill error:', err);
       pythonProc = null;
@@ -7905,42 +7952,29 @@ function killAll() {
   }
 }
 
-function createMenu() {
-  const template = [
-    {
-      label: 'ファイル',
-      submenu: [
-        {
-          label: '設定に戻る',
-          click: async () => {
-            // Chainlitプロセスを終了
-            killAll();
-            // .env設定画面に戻る
-            mainWindow.loadFile(path.join(__dirname, 'env-editor.html'));
-          }
-        },
-        { type: 'separator' },
-        { role: 'quit', label: '終了' }
-      ]
-    },
-    // 他のメニュー項目
-  ];
-
-  const menu = Menu.buildFromTemplate(template);
-  Menu.setApplicationMenu(menu);
-}
-
-
 // ── ウィンドウ生成 ─────────────────────────────────────────
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1000,
     height: 800,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      nodeIntegration: false,
-      contextIsolation: true
+      preload: path.join(__dirname, 'preload.js'), // プリロードスクリプト
+      nodeIntegration: false, // Nodeの機能をレンダラープロセスで使わない（セキュリティ対策）
+      contextIsolation: true, // レンダラープロセスとプリロードスクリプトを分離（セキュリティ対策）
+      webSecurity: true // Webセキュリティを有効化
     }
+  });
+
+  // CSPヘッダーの設定
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';"
+        ]
+      }
+    });
   });
 
   // 起動時は .env 編集画面を表示
@@ -7953,17 +7987,55 @@ function createWindow() {
     mainWindow = null;
   });
 
-  // // 開発環境ではDevToolsを開く
+  // 開発者ツールを開かないように変更
   // if (!isPackaged) {
   //   mainWindow.webContents.openDevTools();
   // }
 }
 
+// メニューを作成（新規追加）
+function createMenu() {
+  const template = [
+    {
+      label: 'ファイル',
+      submenu: [
+        {
+          label: '設定に戻る',
+          accelerator: 'CmdOrCtrl+,', // ショートカットキー
+          click: async () => {
+            killAll();
+            mainWindow.loadFile(path.join(__dirname, 'env-editor.html'));
+          }
+        },
+        { type: 'separator' },
+        { role: 'quit', label: '終了' }
+      ]
+    },
+    // 開発者メニュー（開発時のみ表示）
+    ...(isPackaged ? [] : [
+      {
+        label: '開発',
+        submenu: [
+          { role: 'reload', label: '再読み込み' },
+          { role: 'forceReload', label: '強制再読み込み' },
+          { role: 'toggleDevTools', label: '開発者ツール' }
+        ]
+      }
+    ])
+  ];
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+}
+
 // アプリケーション初期化
 app.whenReady().then(() => {
   createWindow();
-  createMenu(); // メニューを作成
+  createMenu(); // メニューを作成（追加）
+  
   app.on('activate', () => {
+    // macOSでは、Dockアイコンクリック時に
+    // 他のウィンドウが開いていなければ、アプリのウィンドウを再作成するのが一般的
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
@@ -7982,9 +8054,15 @@ app.on('window-all-closed', () => {
 // プロセス終了時のクリーンアップ
 process.on('exit', killAll);
 process.on('SIGINT', () => {
-  killAll();
+  killAll(); // Ctrl+Cなどの割り込みシグナルでプロセスを終了
   app.quit();
 });
+
+// 参考リンク
+// Electron セキュリティ: https://www.electronjs.org/docs/latest/tutorial/security
+// CSP (コンテンツセキュリティポリシー): https://developer.mozilla.org/ja/docs/Web/HTTP/CSP
+// Electron アプリケーション構造: https://www.electronjs.org/docs/latest/tutorial/application-architecture
+// Electron メニュー: https://www.electronjs.org/docs/latest/api/menu
 ```
 
 ### electron\package-lock.json
@@ -16552,16 +16630,25 @@ process.on('SIGINT', () => {
 ### electron\preload.js
 
 ```
+const { contextBridge, ipcRenderer } = require('electron');
+
+// IPC通信のためのAPIをレンダラープロセスに公開
 contextBridge.exposeInMainWorld('api', {
-    // 既存のAPI
-    readEnv: () => ipcRenderer.invoke('read-env'),
-    writeEnv: (content) => ipcRenderer.invoke('write-env', content),
-    startChainlit: () => ipcRenderer.invoke('start-chainlit'),
-    openChainlit: () => ipcRenderer.invoke('open-chainlit'),
-    
-    // 新しいAPI
-    returnToSettings: () => ipcRenderer.invoke('return-to-settings')
-  });
+  // .envファイルの読み込み
+  readEnv: () => ipcRenderer.invoke('read-env'),
+  
+  // .envファイルの書き込み
+  writeEnv: (content) => ipcRenderer.invoke('write-env', content),
+  
+  // Chainlitサーバーの起動
+  startChainlit: () => ipcRenderer.invoke('start-chainlit'),
+  
+  // Chainlitページを開く
+  openChainlit: () => ipcRenderer.invoke('open-chainlit'),
+  
+  // 設定画面に戻る（新規追加）
+  returnToSettings: () => ipcRenderer.invoke('return-to-settings')
+});
 ```
 
 ### electron\src\chainlit-preload.js
