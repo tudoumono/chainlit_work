@@ -49,3 +49,46 @@
       font-size: 12px;
       padding: 4px 8px;
     }
+    /* 以下を追加: パス情報をより目立たせる */
+    .path-info {
+      font-weight: bold;
+      color: #2c3e50;
+    }
+    .path-value {
+      background-color: #e9f5f9;
+      padding: 2px 5px;
+      border-radius: 3px;
+      border: 1px dashed #7fb9d2;
+      display: inline-block;
+      margin-left: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>.env エディタ</h1>
+  
+  <div id="paths">
+    <h3>ファイルパス情報</h3>
+    <!-- ここにパス情報が動的に表示されます -->
+  </div>
+  
+  <div class="button-row">
+    <button id="openLog" class="small-button">ログファイルを開く</button>
+    <button id="openDir" class="small-button">実行ディレクトリを開く</button>
+  </div>
+  
+  <div>
+    <p>環境設定を編集してください：</p>
+    <textarea id="envContent" spellcheck="false"></textarea>
+  </div>
+  
+  <div class="button-row">
+    <button class="save">保存</button>
+    <button class="start-chat">保存 & Chatを開始</button>
+  </div>
+  
+  <div id="message"></div>
+  
+  <script src="./src/env-editor.js"></script>
+</body>
+</html>

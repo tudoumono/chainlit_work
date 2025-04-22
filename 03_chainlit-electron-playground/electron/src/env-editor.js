@@ -17,27 +17,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (pathsElement) {
       pathsElement.innerHTML = `
         <div>
-          <p><strong>環境設定ファイル:</strong> ${paths.envPath}</p>
-          <p><strong>ログファイル:</strong> ${paths.logPath}</p>
-          <p><strong>実行ディレクトリ:</strong> ${paths.exeDir}</p>
+          <p><span class="path-info">環境設定ファイル:</span> <span class="path-value">${paths.envPath}</span></p>
+          <p><span class="path-info">ログファイル:</span> <span class="path-value">${paths.logPath}</span></p>
+          <p><span class="path-info">実行ディレクトリ:</span> <span class="path-value">${paths.exeDir}</span></p>
         </div>
       `;
     }
   } catch (err) {
     console.error('パス情報の取得に失敗しました:', err);
+    if (pathsElement) {
+      pathsElement.innerHTML = `
+        <div class="error">
+          <p>パス情報の取得に失敗しました: ${err.message}</p>
+        </div>
+      `;
+    }
   }
 
   // ログファイルを開くボタンのイベントリスナー
   if (openLogButton) {
     openLogButton.addEventListener('click', async () => {
-      await window.api.openLogFile();
+      try {
+        await window.api.openLogFile();
+      } catch (err) {
+        showMessage('ログファイルを開けませんでした: ' + err.message, true);
+      }
     });
   }
 
   // 実行ディレクトリを開くボタンのイベントリスナー
   if (openDirButton) {
     openDirButton.addEventListener('click', async () => {
-      await window.api.showExeDir();
+      try {
+        await window.api.showExeDir();
+      } catch (err) {
+        showMessage('ディレクトリを開けませんでした: ' + err.message, true);
+      }
     });
   }
 

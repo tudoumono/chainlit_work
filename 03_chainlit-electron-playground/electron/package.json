@@ -11,13 +11,21 @@
   "build": {
     "appId": "com.example.chainlit",
     "productName": "ChainlitApp",
+    "icon": "./assets/icon.ico",
     "win": {
       "target": [
         {
           "target": "portable",
           "arch": ["x64"]
         }
-      ]
+      ],
+      "icon": "./assets/icon.ico"
+    },
+    "mac": {
+      "icon": "./assets/icon.icns"
+    },
+    "linux": {
+      "icon": "./assets/icon.png"
     },
     "asarUnpack": [
       "**/python-3.12.4-embed/**",
