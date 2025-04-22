@@ -6,36 +6,39 @@
  *   tree-kill で親子プロセスを強制終了
  */
 
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
-const { spawn } = require('child_process');
-const net = require('net');
-const path = require('path');
-const fs = require('fs');
-const treeKill = require('tree-kill');
+// 必要なモジュールの読み込み
+const { app, BrowserWindow, ipcMain, shell, Menu } = require('electron'); // Electronの主要機能（Menuを追加）
+const { spawn } = require('child_process'); // 子プロセス（Python）を起動するため
+const net = require('net'); // ネットワーク接続確認用
+const path = require('path'); // ファイルパス操作用
+const fs = require('fs'); // ファイル操作用
+const treeKill = require('tree-kill'); // プロセスツリー全体を終了させるため
 
 // Squirrelイベントチェック（Windows用インストーラー関連）
+// Windows向けインストーラーの処理中なら、アプリを終了
 if (require('electron-squirrel-startup')) app.quit();
 
-let pythonProc = null;
-let killed = false;
-let mainWindow = null;
+// グローバル変数の初期化
+let pythonProc = null; // Pythonプロセスを格納する変数
+let killed = false; // プロセスが意図的に終了されたかどうか
+let mainWindow = null; // メインウィンドウオブジェクト
 
-const PORT = 8000;
+const PORT = 8000; // Chainlitサーバーのポート番号
 
 // パス設定 - アプリがパッケージ化されているかどうかで変わる
-const isPackaged = app.isPackaged;
-const BASE_PATH = isPackaged ? path.join(process.resourcesPath) : path.join(__dirname, '..');
-const DIR = path.join(BASE_PATH, 'chainlit_app');
-const PY_EMBED = path.join(BASE_PATH, 'python-3.12.4-embed', 'python.exe');
+const isPackaged = app.isPackaged; // 本番ビルドかどうか
+const BASE_PATH = isPackaged ? path.join(process.resourcesPath) : path.join(__dirname, '..'); // ベースパス
+const DIR = path.join(BASE_PATH, 'chainlit_app'); // Chainlitアプリのディレクトリ
+const PY_EMBED = path.join(BASE_PATH, 'python-3.12.4-embed', 'python.exe'); // 埋め込みPythonの実行ファイル
 
-// ユーザーデータディレクトリ設定
-const USER_DATA_DIR = app.getPath('userData');
-const ENV_DIR = path.join(USER_DATA_DIR, 'env');
-const LOG_DIR = path.join(USER_DATA_DIR, 'logs');
+// ユーザーデータディレクトリ設定（設定やログの保存先）
+const USER_DATA_DIR = app.getPath('userData'); // Electronが提供するユーザーデータ保存場所
+const ENV_DIR = path.join(USER_DATA_DIR, 'env'); // 環境変数ファイル保存ディレクトリ
+const LOG_DIR = path.join(USER_DATA_DIR, 'logs'); // ログ保存ディレクトリ
 
 // 必要なディレクトリが存在しない場合は作成
 if (!fs.existsSync(ENV_DIR)) {
-  fs.mkdirSync(ENV_DIR, { recursive: true });
+  fs.mkdirSync(ENV_DIR, { recursive: true }); // 再帰的に（親ディレクトリも含めて）作成
 }
 if (!fs.existsSync(LOG_DIR)) {
   fs.mkdirSync(LOG_DIR, { recursive: true });
@@ -43,17 +46,17 @@ if (!fs.existsSync(LOG_DIR)) {
 
 // 環境変数ファイルのパス設定
 const ENV_PATH = isPackaged 
-  ? path.join(ENV_DIR, '.env') 
-  : path.join(DIR, '.env');
+  ? path.join(ENV_DIR, '.env') // 本番環境ではユーザーデータディレクトリに
+  : path.join(DIR, '.env'); // 開発環境ではアプリディレクトリに
 
-const LOG_PATH = path.join(LOG_DIR, 'chainlit.log');
+const LOG_PATH = path.join(LOG_DIR, 'chainlit.log'); // ログファイルのパス
 
 // 初回起動時、開発環境の.envをユーザーデータディレクトリにコピー
 if (isPackaged && !fs.existsSync(ENV_PATH)) {
   try {
     const defaultEnvPath = path.join(DIR, '.env');
     if (fs.existsSync(defaultEnvPath)) {
-      fs.copyFileSync(defaultEnvPath, ENV_PATH);
+      fs.copyFileSync(defaultEnvPath, ENV_PATH); // デフォルト設定をコピー
       console.log('Default .env file copied to user data directory');
     } else {
       // デフォルト環境がない場合は空ファイルを作成
@@ -66,22 +69,22 @@ if (isPackaged && !fs.existsSync(ENV_PATH)) {
 }
 
 // ── IPC ハンドラ ───────────────────────────────────────────
-// .env の読込
+// .env の読込 (レンダラープロセスからの要求に対応)
 ipcMain.handle('read-env', async () => {
   try {
     return fs.existsSync(ENV_PATH)
-      ? fs.readFileSync(ENV_PATH, 'utf8')
-      : '';
+      ? fs.readFileSync(ENV_PATH, 'utf8') // ファイルが存在すれば内容を読み込む
+      : ''; // なければ空文字を返す
   } catch (err) {
     console.error('Error reading .env:', err);
     return '';
   }
 });
 
-// .env の書込
+// .env の書込 (レンダラープロセスからの要求に対応)
 ipcMain.handle('write-env', async (_, content) => {
   try {
-    fs.writeFileSync(ENV_PATH, content, 'utf8');
+    fs.writeFileSync(ENV_PATH, content, 'utf8'); // 内容をファイルに書き込む
     return true;
   } catch (err) {
     console.error('Error writing .env:', err);
@@ -89,7 +92,7 @@ ipcMain.handle('write-env', async (_, content) => {
   }
 });
 
-// Chainlit 起動＆待機 → 成否を返す
+// Chainlit 起動＆待機 → 成否を返す (レンダラープロセスからの要求に対応)
 ipcMain.handle('start-chainlit', async () => {
   if (pythonProc) return true;  // 既に起動済みなら何もしない
 
@@ -105,26 +108,27 @@ ipcMain.handle('start-chainlit', async () => {
 
   // Python環境変数の設定
   const pythonEnv = {
-    ...process.env,
-    PYTHONHOME: path.dirname(PY_EMBED),
-    PYTHONPATH: path.join(path.dirname(PY_EMBED), 'site-packages'),
-    CHAINLIT_CONFIG_PATH: path.join(DIR, '.chainlit', 'config.toml'),
+    ...process.env, // 現在の環境変数を引き継ぐ
+    PYTHONHOME: path.dirname(PY_EMBED), // Pythonのホームディレクトリ
+    PYTHONPATH: path.join(path.dirname(PY_EMBED), 'site-packages'), // Pythonパッケージの場所
+    CHAINLIT_CONFIG_PATH: path.join(DIR, '.chainlit', 'config.toml'), // Chainlit設定ファイルの場所
     // 追加の環境変数
-    PATH: `${path.dirname(PY_EMBED)};${process.env.PATH}`
+    PATH: `${path.dirname(PY_EMBED)};${process.env.PATH}` // PATHにPythonディレクトリを追加
   };
 
   // Chainlitアプリの実行
   try {
+    // Pythonを実行し、Chainlitを起動
     pythonProc = spawn(PY_EMBED, ['-m', 'chainlit', 'run', path.join(DIR, 'main.py'), '-h'], {
-      cwd: DIR,
-      env: pythonEnv,
-      shell: false,
+      cwd: DIR, // 作業ディレクトリ
+      env: pythonEnv, // 環境変数
+      shell: false, // シェルを使わない
     });
 
     // ログファイルへの出力
-    const log = fs.createWriteStream(LOG_PATH, { flags: 'a' });
-    pythonProc.stdout.pipe(log);
-    pythonProc.stderr.pipe(log);
+    const log = fs.createWriteStream(LOG_PATH, { flags: 'a' }); // 'a'は追記モード
+    pythonProc.stdout.pipe(log); // 標準出力をログファイルに書き込む
+    pythonProc.stderr.pipe(log); // エラー出力をログファイルに書き込む
 
     // デバッグ用コンソール出力
     pythonProc.stdout.on('data', (data) => {
@@ -150,57 +154,73 @@ ipcMain.handle('start-chainlit', async () => {
       }
     });
 
-    // サーバー起動待機
+    // サーバー起動待機（ポートが開くまで待つ）
     await new Promise((resolve, reject) => {
       const start = Date.now();
       const iv = setInterval(() => {
-        const sock = new net.Socket();
+        const sock = new net.Socket(); // ソケット接続を試みる
         sock.once('connect', () => {
-          clearInterval(iv);
-          sock.destroy();
+          clearInterval(iv); // 接続成功したら定期チェックを停止
+          sock.destroy(); // ソケットを閉じる
           resolve();
         })
         .once('error', () => {
-          sock.destroy();
-          if (Date.now() - start > 30000) {
+          sock.destroy(); // エラー時はソケットを閉じる
+          if (Date.now() - start > 30000) { // 30秒以上経過したらタイムアウト
             clearInterval(iv);
             reject(new Error('Timeout waiting for Chainlit server'));
           }
         })
-        .connect(PORT, '127.0.0.1');
-      }, 500);
+        .connect(PORT, '127.0.0.1'); // ローカルホストの指定ポートに接続
+      }, 500); // 500ミリ秒ごとに接続チェック
     });
     
     return true;
   } catch (err) {
     console.error('Error starting/waiting for Chainlit server:', err);
-    killAll();
+    killAll(); // エラー時はプロセスを終了
     return false;
   }
 });
 
-// Chainlitページを開く
+// Chainlitページを開く (レンダラープロセスからの要求に対応)
 ipcMain.handle('open-chainlit', async () => {
   const url = `http://localhost:${PORT}`;
   try {
-    await mainWindow.loadURL(url);
+    await mainWindow.loadURL(url); // メインウィンドウにChainlitのURLを読み込む
     return true;
   } catch (err) {
     console.error('Error opening Chainlit URL:', err);
     // フォールバック：外部ブラウザで開く
-    shell.openExternal(url);
+    shell.openExternal(url); // 代わりに外部ブラウザでURLを開く
+    return false;
+  }
+});
+
+// .env設定画面に戻る（新規追加）
+ipcMain.handle('return-to-settings', async () => {
+  try {
+    // Chainlitを終了
+    killAll();
+    
+    // .env設定画面を表示
+    mainWindow.loadFile(path.join(__dirname, 'env-editor.html'));
+    return true;
+  } catch (err) {
+    console.error('Error returning to settings:', err);
     return false;
   }
 });
 
 // ── プロセス殺害ヘルパー ───────────────────────────────────
 function killAll() {
-  if (!pythonProc || killed) return;
+  if (!pythonProc || killed) return; // プロセスがないか既に終了済みなら何もしない
   
   console.log('Killing Chainlit process...');
   killed = true;
   
   try {
+    // treeKillはプロセスIDを指定して、そのプロセスとその子プロセスをすべて終了させる
     treeKill(pythonProc.pid, 'SIGTERM', err => {
       if (err) console.error('tree-kill error:', err);
       pythonProc = null;
@@ -217,10 +237,23 @@ function createWindow() {
     width: 1000,
     height: 800,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      nodeIntegration: false,
-      contextIsolation: true
+      preload: path.join(__dirname, 'preload.js'), // プリロードスクリプト
+      nodeIntegration: false, // Nodeの機能をレンダラープロセスで使わない（セキュリティ対策）
+      contextIsolation: true, // レンダラープロセスとプリロードスクリプトを分離（セキュリティ対策）
+      webSecurity: true // Webセキュリティを有効化
     }
+  });
+
+  // CSPヘッダーの設定
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';"
+        ]
+      }
+    });
   });
 
   // 起動時は .env 編集画面を表示
@@ -233,17 +266,55 @@ function createWindow() {
     mainWindow = null;
   });
 
-  // 開発環境ではDevToolsを開く
-  if (!isPackaged) {
-    mainWindow.webContents.openDevTools();
-  }
+  // 開発者ツールを開かないように変更
+  // if (!isPackaged) {
+  //   mainWindow.webContents.openDevTools();
+  // }
+}
+
+// メニューを作成（新規追加）
+function createMenu() {
+  const template = [
+    {
+      label: 'ファイル',
+      submenu: [
+        {
+          label: '設定に戻る',
+          accelerator: 'CmdOrCtrl+,', // ショートカットキー
+          click: async () => {
+            killAll();
+            mainWindow.loadFile(path.join(__dirname, 'env-editor.html'));
+          }
+        },
+        { type: 'separator' },
+        { role: 'quit', label: '終了' }
+      ]
+    },
+    // 開発者メニュー（開発時のみ表示）
+    ...(isPackaged ? [] : [
+      {
+        label: '開発',
+        submenu: [
+          { role: 'reload', label: '再読み込み' },
+          { role: 'forceReload', label: '強制再読み込み' },
+          { role: 'toggleDevTools', label: '開発者ツール' }
+        ]
+      }
+    ])
+  ];
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
 }
 
 // アプリケーション初期化
 app.whenReady().then(() => {
   createWindow();
+  createMenu(); // メニューを作成（追加）
   
   app.on('activate', () => {
+    // macOSでは、Dockアイコンクリック時に
+    // 他のウィンドウが開いていなければ、アプリのウィンドウを再作成するのが一般的
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
@@ -262,6 +333,12 @@ app.on('window-all-closed', () => {
 // プロセス終了時のクリーンアップ
 process.on('exit', killAll);
 process.on('SIGINT', () => {
-  killAll();
+  killAll(); // Ctrl+Cなどの割り込みシグナルでプロセスを終了
   app.quit();
 });
+
+// 参考リンク
+// Electron セキュリティ: https://www.electronjs.org/docs/latest/tutorial/security
+// CSP (コンテンツセキュリティポリシー): https://developer.mozilla.org/ja/docs/Web/HTTP/CSP
+// Electron アプリケーション構造: https://www.electronjs.org/docs/latest/tutorial/application-architecture
+// Electron メニュー: https://www.electronjs.org/docs/latest/api/menu

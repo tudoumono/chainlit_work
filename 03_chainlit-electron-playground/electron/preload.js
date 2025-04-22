@@ -12,5 +12,8 @@ contextBridge.exposeInMainWorld('api', {
   startChainlit: () => ipcRenderer.invoke('start-chainlit'),
   
   // Chainlitページを開く
-  openChainlit: () => ipcRenderer.invoke('open-chainlit')
+  openChainlit: () => ipcRenderer.invoke('open-chainlit'),
+  
+  // 設定画面に戻る（新規追加）
+  returnToSettings: () => ipcRenderer.invoke('return-to-settings')
 });
