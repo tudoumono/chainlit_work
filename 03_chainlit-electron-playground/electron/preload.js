@@ -1,12 +1,16 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-// レンダラープロセスで使用する安全なAPIを公開
-contextBridge.exposeInMainWorld('electronAPI', {
-  // .envファイル関連
+// IPC通信のためのAPIをレンダラープロセスに公開
+contextBridge.exposeInMainWorld('api', {
+  // .envファイルの読み込み
   readEnv: () => ipcRenderer.invoke('read-env'),
+  
+  // .envファイルの書き込み
   writeEnv: (content) => ipcRenderer.invoke('write-env', content),
   
-  // Chainlit関連
+  // Chainlitサーバーの起動
   startChainlit: () => ipcRenderer.invoke('start-chainlit'),
+  
+  // Chainlitページを開く
   openChainlit: () => ipcRenderer.invoke('open-chainlit')
 });

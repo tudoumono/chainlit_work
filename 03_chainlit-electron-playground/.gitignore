@@ -9,7 +9,9 @@ __pycache__/
 
 python-3.12.4-embed
 
-
+generate_project_summary.py
+chainlit_app\*_summary.txt
+# https://github.com/Olemi-llm-apprentice/generate-project-summary/blob/main/generate_project_summary.py
 
 #============================#  01_chainlitTest     #============================#
 # 環境変数
