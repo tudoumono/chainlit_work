@@ -36,20 +36,23 @@ const PY_EMBED = path.join(BASE_PATH, 'python-3.12.4-embed', 'python.exe'); // �
 
 // 設定ファイルとログファイルを実行ファイルのディレクトリに保存
 const ENV_DIR = path.join(EXE_DIR, 'env'); // 環境変数ファイル保存ディレクトリ
-const LOG_DIR = path.join(EXE_DIR, 'logs'); // ログ保存ディレクトリ
+const CHAT_LOG_DIR = path.join(EXE_DIR, 'logs'); // チャットログ保存ディレクトリ
+const CONSOLE_LOG_DIR = path.join(EXE_DIR, 'chainlit'); // コンソールログ保存ディレクトリ
 
 // 必要なディレクトリが存在しない場合は作成
 if (!fs.existsSync(ENV_DIR)) {
-  fs.mkdirSync(ENV_DIR, { recursive: true }); // 再帰的に（親ディレクトリも含めて）作成
+  fs.mkdirSync(ENV_DIR, { recursive: true });
 }
-if (!fs.existsSync(LOG_DIR)) {
-  fs.mkdirSync(LOG_DIR, { recursive: true });
+if (!fs.existsSync(CHAT_LOG_DIR)) {
+  fs.mkdirSync(CHAT_LOG_DIR, { recursive: true });
+}
+if (!fs.existsSync(CONSOLE_LOG_DIR)) {
+  fs.mkdirSync(CONSOLE_LOG_DIR, { recursive: true });
 }
 
 // 環境変数ファイルのパス設定
 const ENV_PATH = path.join(ENV_DIR, '.env');
-
-const LOG_PATH = path.join(LOG_DIR, 'chainlit.log'); // ログファイルのパス
+const CONSOLE_LOG_PATH = path.join(CONSOLE_LOG_DIR, 'chainlit.log'); // コンソールログのパス
 
 // 初回起動時、開発環境の.envをEXE_DIRにコピー
 if (isPackaged && !fs.existsSync(ENV_PATH)) {
@@ -65,6 +68,46 @@ if (isPackaged && !fs.existsSync(ENV_PATH)) {
     }
   } catch (err) {
     console.error('Error initializing .env file:', err);
+  }
+}
+
+// 最新のチャットログファイルを検索する関数
+function findLatestChatLog() {
+  try {
+    // logsディレクトリが存在しない場合は空のオブジェクトを返す
+    if (!fs.existsSync(CHAT_LOG_DIR)) {
+      return { exists: false, path: CONSOLE_LOG_PATH };
+    }
+
+    // ディレクトリ内のファイル一覧を取得
+    const files = fs.readdirSync(CHAT_LOG_DIR);
+    
+    // 手動保存されたチャットログファイル（.txt）を検索
+    const manualChatLogs = files.filter(file => 
+      file.startsWith('manual_chat_') && file.endsWith('.txt')
+    );
+    
+    // 自動保存されたチャットログファイル（.txt）を検索
+    const autoChatLogs = files.filter(file => 
+      file.startsWith('auto_chat_') && file.endsWith('.txt')
+    );
+    
+    // 優先度: 1.手動保存ファイル、2.自動保存ファイル
+    const chatLogs = manualChatLogs.length > 0 ? manualChatLogs : autoChatLogs;
+    
+    if (chatLogs.length === 0) {
+      return { exists: false, path: CONSOLE_LOG_PATH };
+    }
+    
+    // ファイル名でソート（日時順）して最新のものを取得
+    const latestLog = chatLogs.sort().pop();
+    return { 
+      exists: true, 
+      path: path.join(CHAT_LOG_DIR, latestLog)
+    };
+  } catch (err) {
+    console.error('Error finding latest chat log:', err);
+    return { exists: false, path: CONSOLE_LOG_PATH };
   }
 }
 
@@ -96,9 +139,34 @@ ipcMain.handle('write-env', async (_, content) => {
 ipcMain.handle('get-paths', async () => {
   return {
     envPath: ENV_PATH,
-    logPath: LOG_PATH,
+    logPath: CONSOLE_LOG_PATH, // LOG_PATH を CONSOLE_LOG_PATH に変更
+    consolePath: CONSOLE_LOG_PATH,
+    chatLogDir: CHAT_LOG_DIR,
     exeDir: EXE_DIR
   };
+});
+
+// 最新のチャットログ情報を取得 (レンダラープロセスからの要求に対応)
+ipcMain.handle('getLatestChatLog', async () => {
+  return findLatestChatLog();
+});
+
+// 最新のチャットログを開く (レンダラープロセスからの要求に対応)
+ipcMain.handle('openLatestChatLog', async () => {
+  const latestLog = findLatestChatLog();
+  if (latestLog.exists) {
+    try {
+      await shell.openPath(latestLog.path);
+      return true;
+    } catch (err) {
+      console.error('Error opening latest chat log:', err);
+      return false;
+    }
+  } else {
+    // 最新のログが見つからない場合は標準のログファイルを開く
+    await shell.openPath(CONSOLE_LOG_PATH);
+    return false;
+  }
 });
 
 // Chainlit 起動＆待機 → 成否を返す (レンダラープロセスからの要求に対応)
@@ -106,6 +174,7 @@ ipcMain.handle('start-chainlit', async () => {
   if (pythonProc) return true;  // 既に起動済みなら何もしない
 
   // パッケージ環境では.envファイルをChainlitアプリディレクトリにコピー
+  // この部分はコメントアウトしない - まだ必要な場合がある
   if (isPackaged) {
     try {
       // 実行ディレクトリの.envファイルをChainlitアプリディレクトリにコピー
@@ -121,6 +190,10 @@ ipcMain.handle('start-chainlit', async () => {
     PYTHONHOME: path.dirname(PY_EMBED), // Pythonのホームディレクトリ
     PYTHONPATH: path.join(path.dirname(PY_EMBED), 'site-packages'), // Pythonパッケージの場所
     CHAINLIT_CONFIG_PATH: path.join(DIR, '.chainlit', 'config.toml'), // Chainlit設定ファイルの場所
+    // EXE_DIRをPythonに渡す（ログファイルの保存先指定のため）
+    EXE_DIR: EXE_DIR,
+    CHAT_LOG_DIR: CHAT_LOG_DIR,
+    CONSOLE_LOG_DIR: CONSOLE_LOG_DIR,
     // 追加の環境変数
     PATH: `${path.dirname(PY_EMBED)};${process.env.PATH}` // PATHにPythonディレクトリを追加
   };
@@ -135,7 +208,7 @@ ipcMain.handle('start-chainlit', async () => {
     });
 
     // ログファイルへの出力
-    const log = fs.createWriteStream(LOG_PATH, { flags: 'a' }); // 'a'は追記モード
+    const log = fs.createWriteStream(CONSOLE_LOG_PATH, { flags: 'a' }); // 'a'は追記モード
     pythonProc.stdout.pipe(log); // 標準出力をログファイルに書き込む
     pythonProc.stderr.pipe(log); // エラー出力をログファイルに書き込む
 
@@ -224,7 +297,7 @@ ipcMain.handle('return-to-settings', async () => {
 // ファイルを選択してログファイルを開く
 ipcMain.handle('open-log-file', async () => {
   try {
-    shell.openPath(LOG_PATH);
+    shell.openPath(CONSOLE_LOG_PATH);
     return true;
   } catch (err) {
     console.error('Error opening log file:', err);
@@ -321,7 +394,13 @@ function createMenu() {
         {
           label: 'ログを表示',
           click: async () => {
-            shell.openPath(LOG_PATH);
+            // 最新のチャットログがあればそれを開く、なければ標準ログを開く
+            const latestLog = findLatestChatLog();
+            if (latestLog.exists) {
+              shell.openPath(latestLog.path);
+            } else {
+              shell.openPath(CONSOLE_LOG_PATH);
+            }
           }
         },
         {

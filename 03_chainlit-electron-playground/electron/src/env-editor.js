@@ -13,34 +13,46 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const paths = await window.api.getPaths();
     
-    // パス情報を表示
-    if (pathsElement) {
-      pathsElement.innerHTML = `
-        <div>
-          <p><span class="path-info">環境設定ファイル:</span> <span class="path-value">${paths.envPath}</span></p>
-          <p><span class="path-info">ログファイル:</span> <span class="path-value">${paths.logPath}</span></p>
-          <p><span class="path-info">実行ディレクトリ:</span> <span class="path-value">${paths.exeDir}</span></p>
-        </div>
-      `;
+    // logsディレクトリ内の最新のTXTファイルを取得するための関数
+    async function getLatestChatLogPath() {
+      try {
+        // アプリから直接最新のログファイルパスを取得（この機能はmain.jsに実装が必要）
+        const logFileInfo = await window.api.getLatestChatLog();
+        return logFileInfo; // { exists: true/false, path: "パス" }
+      } catch (err) {
+        console.error('最新のログファイル情報取得に失敗:', err);
+        return { exists: false, path: paths.logPath };
+      }
     }
-  } catch (err) {
-    console.error('パス情報の取得に失敗しました:', err);
-    if (pathsElement) {
-      pathsElement.innerHTML = `
-        <div class="error">
-          <p>パス情報の取得に失敗しました: ${err.message}</p>
-        </div>
-      `;
-    }
+    
+  // 最新のチャットログ情報を取得
+  const latestLogInfo = await window.api.getLatestChatLog();
+  
+  // パス情報を表示
+  if (pathsElement) {
+    pathsElement.innerHTML = `
+      <div>
+        <p><strong>環境設定ファイル:</strong> <span class="path-value">${paths.envPath}</span></p>
+        <p><strong>チャットログ:</strong> <span class="path-value">${latestLogInfo.exists ? latestLogInfo.path : '(保存されたログがありません)'}</span></p>
+        <p><strong>コンソールログ:</strong> <span class="path-value">${paths.consolePath}</span></p>
+        <p><strong>実行ディレクトリ:</strong> <span class="path-value">${paths.exeDir}</span></p>
+      </div>
+    `;
   }
+} catch (err) {
+  console.error('パス情報の取得に失敗しました:', err);
+}
+
 
   // ログファイルを開くボタンのイベントリスナー
   if (openLogButton) {
     openLogButton.addEventListener('click', async () => {
       try {
-        await window.api.openLogFile();
+        // 最新のチャットログを開く（main.jsに実装が必要）
+        await window.api.openLatestChatLog();
       } catch (err) {
-        showMessage('ログファイルを開けませんでした: ' + err.message, true);
+        // 失敗した場合は元のログファイルを開く
+        await window.api.openLogFile();
       }
     });
   }
@@ -48,11 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 実行ディレクトリを開くボタンのイベントリスナー
   if (openDirButton) {
     openDirButton.addEventListener('click', async () => {
-      try {
-        await window.api.showExeDir();
-      } catch (err) {
-        showMessage('ディレクトリを開けませんでした: ' + err.message, true);
-      }
+      await window.api.showExeDir();
     });
   }
 

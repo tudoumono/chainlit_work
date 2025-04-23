@@ -20,7 +20,13 @@ contextBridge.exposeInMainWorld('api', {
   // パス情報の取得
   getPaths: () => ipcRenderer.invoke('get-paths'),
   
-  // ログファイルを開く
+  // 最新のチャットログ情報を取得
+  getLatestChatLog: () => ipcRenderer.invoke('getLatestChatLog'),
+  
+  // 最新のチャットログを開く
+  openLatestChatLog: () => ipcRenderer.invoke('openLatestChatLog'),
+  
+  // ログファイルを開く（従来の機能）
   openLogFile: () => ipcRenderer.invoke('open-log-file'),
   
   // 実行ディレクトリを表示

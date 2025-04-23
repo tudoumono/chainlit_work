@@ -12,6 +12,7 @@
     "appId": "com.example.chainlit",
     "productName": "ChainlitApp",
     "icon": "./assets/icon.ico",
+    "afterPack": "./build-scripts/after-pack.js",
     "win": {
       "target": [
         {
