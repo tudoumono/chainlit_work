@@ -283,13 +283,9 @@ async def display_file_in_ui(file_info):
 # ────────────────────────────────────────────────────────────────
 # chainlit_select_models.py
 MODELS = [
-    ("GPT-4.1（高精度・長文）", "gpt-4.1"),
-    ("GPT-4o（マルチモーダル）", "gpt-4o"),
-    ("GPT-4", "gpt-4"),
-    ("GPT-4-1106-preview（※5月廃止）", "gpt-4-1106-preview"),
-    ("GPT-3.5 Turbo", "gpt-3.5-turbo"),
-    ("GPT-3.5 Turbo 1106", "gpt-3.5-turbo-1106"),
-    ("GPT-3.5 Turbo Instruct", "gpt-3.5-turbo-instruct"),
+    ("GPT‑3.5 Turbo", "gpt-3.5-turbo"),   # 軽量・高速・低価格
+    ("GPT‑4 Turbo",   "gpt-4-turbo"),     # GPT‑4ベースで高速・安価
+    ("GPT‑4o",        "gpt-4o"),          # 最新・マルチモーダル
 ]
 
 get_prefix = lambda: "🛠️【デバッグモード】\n" if DEBUG_MODE else ""
@@ -564,14 +560,31 @@ async def shutdown_app(_):
 @cl.on_message
 async def on_message(msg: cl.Message, resume: bool = False):
     """
+    メインのメッセージハンドラ
     resume=True のときは「続きからお願いします」などの内部呼び出し用
     """
     # -- 事前リセットと履歴処理 ------------------------------
-    cl.user_session.set("cancel_flag", False)             # ★ 停止フラグを毎回リセット
+    cl.user_session.set("cancel_flag", False)
     history = cl.user_session.get("chat_history", [])
-    if not resume:                                        # 本来のユーザ入力だけ履歴に残す
+    
+    # ★ ファイルアップロード処理の追加 ★
+    if msg.elements and not resume:
+        files_info = []
+        for element in msg.elements:
+            if hasattr(element, 'mime') and hasattr(element, 'name'):
+                files_info.append(f"- {element.name} ({element.mime})")
+                # ユーザーセッションにファイルを保存（あとで参照できるように）
+                uploaded_files = cl.user_session.get("uploaded_files", [])
+                uploaded_files.append(element)
+                cl.user_session.set("uploaded_files", uploaded_files)
+        
+        if files_info:
+            files_text = "\n".join(files_info)
+            await cl.Message(content=f"以下のファイルを受け取りました：\n{files_text}").send()
+    
+    if not resume:
         history.append({"role": "user", "content": msg.content})
-        cl.user_session.set("last_user_msg", msg.content) # ★ 再開用に保持
+        cl.user_session.set("last_user_msg", msg.content)
 
     # ファイル添付があるか確認
     if msg.elements and not resume:
