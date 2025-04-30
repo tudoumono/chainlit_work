@@ -1,0 +1,67 @@
+# Chainlit設定ファイル
+# ファイルアップロード機能を有効化し、各種制限を設定
+
+# 基本設定
+chainlit_server:
+  cors:
+    allowed_origins: ["*"]  # CORSの許可（アプリケーションに合わせて調整）
+  
+  files:
+    serve_dir: "files"
+    allowed_file_types: ["png", "jpeg", "jpg", "pdf", "txt", "log", "csv", "xlsx", "xls", "docx", "doc", "pptx", "ppt", "md", "json", "py", "js", "html", "css", "xml", "gif", "webp", "svg"]
+
+# UI設定
+ui:
+  name: "Chainlit + OpenAI ファイル処理アプリ"
+  description: "各種ファイル形式をアップロードして処理できるチャットアプリ"
+  theme: "system"  # "system", "light", "dark"
+
+# 機能設定
+features:
+  multi_modal:
+    enabled: true  # マルチモーダル機能（ファイルアップロードに必要）
+    image_generation:
+      enabled: false
+    spontaneous_file_upload:
+      # メッセージにファイルを添付できる機能
+      enabled: true
+      max_size_mb: 20  # ファイルサイズの最大値（MB）
+      max_files: 5     # 一度にアップロードできるファイル数
+      accept:  # 受け付けるMIMEタイプ
+        - text/plain
+        - text/markdown
+        - application/pdf
+        - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+        - application/vnd.ms-excel
+        - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+        - application/msword
+        - application/vnd.openxmlformats-officedocument.presentationml.presentation
+        - application/vnd.ms-powerpoint
+        - image/png
+        - image/jpeg
+        - image/gif
+        - image/webp
+        - image/svg+xml
+  
+  # 会話の一時保存
+  persistent_chat:
+    enabled: true
+    settings:
+      history_limit: 50  # 会話履歴の保存数制限
+  
+  # メッセージの編集
+  message_editing:
+    enabled: true
+  
+  # メッセージの削除
+  message_deletion:
+    enabled: true
+
+# デバッグ設定
+project:
+  enable_telemetry: false
+  user_env: false
+
+# アクセシビリティ設定
+accessibility:
+  auto_scroll: true
