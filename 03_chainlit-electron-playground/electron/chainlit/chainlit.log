@@ -1,0 +1,434 @@
+ファイルアップロード開始: 1件のファイル
+ファイル名: 相手のプロフィール情報.txt, パス: F:\10_code\03_Chainlit\03_chainlit-electron-playground\chainlit_app\.files\549c99d0-78d7-4575-9ea3-0e307e79de80\6f3f1004-2f7c-4ee1-91f3-cb412cdab781.txt, MIME: unknown
+アップロードディレクトリ: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\uploads
+2025-05-02 00:07:33 - Translated markdown file for ja not found. Defaulting to chainlit.md.
+2025-05-02 00:07:41 - Skipping data after last boundary
+ファイルアップロード開始: 1件のファイル
+ファイル名: 相手のプロフィール情報.txt, パス: F:\10_code\03_Chainlit\03_chainlit-electron-playground\chainlit_app\.files\cc0ca605-73f4-4534-ba02-cf670ef6195e\b3151025-ef6f-4ee1-a140-fd7a9a66bf47.txt, MIME: unknown
+アップロードディレクトリ: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\uploads
+2025-05-02 00:07:52 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-05-02 00:08:05 - Skipping data after last boundary
+2025-05-02 00:08:12 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-05-02 00:08:25 - Skipping data after last boundary
+ファイルアップロード開始: 1件のファイル
+ファイル名: 領収書_IPA0000000665236.pdf, パス: F:\10_code\03_Chainlit\03_chainlit-electron-playground\chainlit_app\.files\cc0ca605-73f4-4534-ba02-cf670ef6195e\621bfbd8-f930-47b1-a93a-f57785d7a3c3.pdf, MIME: unknown
+アップロードディレクトリ: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\uploads
+2025-05-02 00:08:32 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+Loading .env from: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\env\.env
+[DEBUG] EXE_DIR: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron
+[DEBUG] ENV_PATH: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\env\.env
+[DEBUG] CONSOLE_LOG_DIR: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\chainlit
+[DEBUG] CHAT_LOG_DIR: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\logs
+[DEBUG] UPLOADS_DIR: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\uploads
+2025-05-02 00:15:01 - Your app is available at http://localhost:8000
+2025-05-02 00:15:02 - Translated markdown file for ja not found. Defaulting to chainlit.md.
+2025-05-02 00:15:10 - Skipping data after last boundary
+Traceback (most recent call last):
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\chainlit_app\file_utils.py", line 342, in handle_file_upload
+    await progress_msg.update(content=f"ファイル {file.name} を処理中... ({index+1}/{len(files)})")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Message.update() got an unexpected keyword argument 'content'
+Traceback (most recent call last):
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\chainlit_app\file_utils.py", line 382, in handle_file_upload
+    await progress_msg.update(content="\u2705 すべてのファイルの処理が完了しました！")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Message.update() got an unexpected keyword argument 'content'
+--- Logging error ---
+Traceback (most recent call last):
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\chainlit_app\file_utils.py", line 382, in handle_file_upload
+    await progress_msg.update(content="\u2705 すべてのファイルの処理が完了しました！")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Message.update() got an unexpected keyword argument 'content'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\chainlit\utils.py", line 47, in wrapper
+    return await user_function(**params_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\chainlit_app\main.py", line 96, in upload_file_action
+    processed_files = await file_utils.handle_file_upload(files, settings["UPLOADS_DIR"])
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\chainlit_app\file_utils.py", line 387, in handle_file_upload
+    await progress_msg.update(content=f"\u274c ファイルアップロード処理中に問題が発生しました: {str(e)}")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Message.update() got an unexpected keyword argument 'content'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "logging\__init__.py", line 1163, in emit
+UnicodeEncodeError: 'cp932' codec can't encode character '\u2705' in position 285: illegal multibyte sequence
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\chainlit\__main__.py", line 4, in <module>
+    cli(prog_name="chainlit")
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\click\core.py", line 1161, in __call__
+    return self.main(*args, **kwargs)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\click\core.py", line 1082, in main
+    rv = self.invoke(ctx)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\click\core.py", line 1697, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\click\core.py", line 1443, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\click\core.py", line 788, in invoke
+    return __callback(*args, **kwargs)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\chainlit\cli\__init__.py", line 214, in chainlit_run
+    run_chainlit(target)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\chainlit\cli\__init__.py", line 107, in run_chainlit
+    asyncio.run(start())
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\nest_asyncio.py", line 30, in run
+    return loop.run_until_complete(task)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\nest_asyncio.py", line 92, in run_until_complete
+    self._run_once()
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\nest_asyncio.py", line 133, in _run_once
+    handle._run()
+  File "asyncio\events.py", line 88, in _run
+  File "asyncio\tasks.py", line 396, in __wakeup
+  File "asyncio\tasks.py", line 303, in __step
+  File "asyncio\tasks.py", line 314, in __step_run_and_handle_result
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\uvicorn\protocols\http\h11_impl.py", line 403, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\fastapi\applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\applications.py", line 113, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\middleware\errors.py", line 165, in __call__
+    await self.app(scope, receive, _send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\middleware\cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\middleware\cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\middleware\exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\routing.py", line 73, in app
+    response = await f(request)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\fastapi\routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\fastapi\routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\chainlit\server.py", line 1078, in call_action
+    response = await callback(action)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\chainlit\utils.py", line 53, in wrapper
+    logger.exception(e)
+  File "logging\__init__.py", line 1574, in exception
+  File "logging\__init__.py", line 1568, in error
+  File "logging\__init__.py", line 1684, in _log
+  File "logging\__init__.py", line 1700, in handle
+  File "logging\__init__.py", line 1762, in callHandlers
+  File "logging\__init__.py", line 1028, in handle
+  File "logging\__init__.py", line 1168, in emit
+Message: TypeError("Message.update() got an unexpected keyword argument 'content'")
+Arguments: ()
+ファイルアップロード開始: 1件のファイル
+アップロードディレクトリ: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\uploads
+ファイル Pro 講師シフト  - 25年5月.pdf の処理中にエラーが発生: Message.update() got an unexpected keyword argument 'content'
+ファイルアップロード全体でエラーが発生: Message.update() got an unexpected keyword argument 'content'
+2025-05-02 00:15:41 - Skipping data after last boundary
+2025-05-02 00:15:44 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-05-02 00:15:52 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-05-02 00:15:57 - Skipping data after last boundary
+Traceback (most recent call last):
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\chainlit_app\file_utils.py", line 342, in handle_file_upload
+    await progress_msg.update(content=f"ファイル {file.name} を処理中... ({index+1}/{len(files)})")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Message.update() got an unexpected keyword argument 'content'
+Traceback (most recent call last):
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\chainlit_app\file_utils.py", line 382, in handle_file_upload
+    await progress_msg.update(content="\u2705 すべてのファイルの処理が完了しました！")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Message.update() got an unexpected keyword argument 'content'
+--- Logging error ---
+Traceback (most recent call last):
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\chainlit_app\file_utils.py", line 382, in handle_file_upload
+    await progress_msg.update(content="\u2705 すべてのファイルの処理が完了しました！")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Message.update() got an unexpected keyword argument 'content'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\chainlit\utils.py", line 47, in wrapper
+    return await user_function(**params_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\chainlit_app\main.py", line 96, in upload_file_action
+    processed_files = await file_utils.handle_file_upload(files, settings["UPLOADS_DIR"])
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\chainlit_app\file_utils.py", line 387, in handle_file_upload
+    await progress_msg.update(content=f"\u274c ファイルアップロード処理中に問題が発生しました: {str(e)}")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Message.update() got an unexpected keyword argument 'content'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "logging\__init__.py", line 1163, in emit
+UnicodeEncodeError: 'cp932' codec can't encode character '\u2705' in position 285: illegal multibyte sequence
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\chainlit\__main__.py", line 4, in <module>
+    cli(prog_name="chainlit")
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\click\core.py", line 1161, in __call__
+    return self.main(*args, **kwargs)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\click\core.py", line 1082, in main
+    rv = self.invoke(ctx)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\click\core.py", line 1697, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\click\core.py", line 1443, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\click\core.py", line 788, in invoke
+    return __callback(*args, **kwargs)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\chainlit\cli\__init__.py", line 214, in chainlit_run
+    run_chainlit(target)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\chainlit\cli\__init__.py", line 107, in run_chainlit
+    asyncio.run(start())
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\nest_asyncio.py", line 30, in run
+    return loop.run_until_complete(task)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\nest_asyncio.py", line 92, in run_until_complete
+    self._run_once()
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\nest_asyncio.py", line 133, in _run_once
+    handle._run()
+  File "asyncio\events.py", line 88, in _run
+  File "asyncio\tasks.py", line 396, in __wakeup
+  File "asyncio\tasks.py", line 303, in __step
+  File "asyncio\tasks.py", line 314, in __step_run_and_handle_result
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\uvicorn\protocols\http\h11_impl.py", line 403, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\fastapi\applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\applications.py", line 113, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\middleware\errors.py", line 165, in __call__
+    await self.app(scope, receive, _send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\middleware\cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\middleware\cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\middleware\exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\routing.py", line 73, in app
+    response = await f(request)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\fastapi\routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\fastapi\routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\chainlit\server.py", line 1078, in call_action
+    response = await callback(action)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\chainlit\utils.py", line 53, in wrapper
+    logger.exception(e)
+  File "logging\__init__.py", line 1574, in exception
+  File "logging\__init__.py", line 1568, in error
+  File "logging\__init__.py", line 1684, in _log
+  File "logging\__init__.py", line 1700, in handle
+  File "logging\__init__.py", line 1762, in callHandlers
+  File "logging\__init__.py", line 1028, in handle
+  File "logging\__init__.py", line 1168, in emit
+Message: TypeError("Message.update() got an unexpected keyword argument 'content'")
+Arguments: ()
+Loading .env from: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\env\.env
+[DEBUG] EXE_DIR: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron
+[DEBUG] ENV_PATH: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\env\.env
+[DEBUG] CONSOLE_LOG_DIR: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\chainlit
+[DEBUG] CHAT_LOG_DIR: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\logs
+[DEBUG] UPLOADS_DIR: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\uploads
+2025-05-02 00:17:04 - Your app is available at http://localhost:8000
+2025-05-02 00:17:04 - Translated markdown file for ja not found. Defaulting to chainlit.md.
+2025-05-02 00:17:13 - Skipping data after last boundary
+Traceback (most recent call last):
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\chainlit_app\file_utils.py", line 342, in handle_file_upload
+    await progress_msg.update(f"ファイル {file.name} を処理中... ({index+1}/{len(files)})")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Message.update() takes 1 positional argument but 2 were given
+Traceback (most recent call last):
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\chainlit_app\file_utils.py", line 370, in handle_file_upload
+    await progress_msg.update("\u2705 すべてのファイルの処理が完了しました！")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Message.update() takes 1 positional argument but 2 were given
+--- Logging error ---
+Traceback (most recent call last):
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\chainlit_app\file_utils.py", line 370, in handle_file_upload
+    await progress_msg.update("\u2705 すべてのファイルの処理が完了しました！")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Message.update() takes 1 positional argument but 2 were given
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\chainlit\utils.py", line 47, in wrapper
+    return await user_function(**params_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\chainlit_app\main.py", line 96, in upload_file_action
+    processed_files = await file_utils.handle_file_upload(files, settings["UPLOADS_DIR"])
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\chainlit_app\file_utils.py", line 376, in handle_file_upload
+    await progress_msg.update(f"\u274c ファイルアップロード処理中に問題が発生しました: {str(e)}")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Message.update() takes 1 positional argument but 2 were given
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "logging\__init__.py", line 1163, in emit
+UnicodeEncodeError: 'cp932' codec can't encode character '\u2705' in position 277: illegal multibyte sequence
+Call stack:
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\chainlit\__main__.py", line 4, in <module>
+    cli(prog_name="chainlit")
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\click\core.py", line 1161, in __call__
+    return self.main(*args, **kwargs)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\click\core.py", line 1082, in main
+    rv = self.invoke(ctx)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\click\core.py", line 1697, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\click\core.py", line 1443, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\click\core.py", line 788, in invoke
+    return __callback(*args, **kwargs)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\chainlit\cli\__init__.py", line 214, in chainlit_run
+    run_chainlit(target)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\chainlit\cli\__init__.py", line 107, in run_chainlit
+    asyncio.run(start())
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\nest_asyncio.py", line 30, in run
+    return loop.run_until_complete(task)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\nest_asyncio.py", line 92, in run_until_complete
+    self._run_once()
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\nest_asyncio.py", line 133, in _run_once
+    handle._run()
+  File "asyncio\events.py", line 88, in _run
+  File "asyncio\tasks.py", line 396, in __wakeup
+  File "asyncio\tasks.py", line 303, in __step
+  File "asyncio\tasks.py", line 314, in __step_run_and_handle_result
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\uvicorn\protocols\http\h11_impl.py", line 403, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\fastapi\applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\applications.py", line 113, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\middleware\errors.py", line 165, in __call__
+    await self.app(scope, receive, _send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\middleware\cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\middleware\cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\middleware\exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\starlette\routing.py", line 73, in app
+    response = await f(request)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\fastapi\routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\fastapi\routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\chainlit\server.py", line 1078, in call_action
+    response = await callback(action)
+  File "F:\10_code\03_Chainlit\03_chainlit-electron-playground\python-3.12.4-embed\site-packages\chainlit\utils.py", line 53, in wrapper
+    logger.exception(e)
+  File "logging\__init__.py", line 1574, in exception
+  File "logging\__init__.py", line 1568, in error
+  File "logging\__init__.py", line 1684, in _log
+  File "logging\__init__.py", line 1700, in handle
+  File "logging\__init__.py", line 1762, in callHandlers
+  File "logging\__init__.py", line 1028, in handle
+  File "logging\__init__.py", line 1168, in emit
+Message: TypeError('Message.update() takes 1 positional argument but 2 were given')
+Arguments: ()
+Loading .env from: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\env\.env
+[DEBUG] EXE_DIR: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron
+[DEBUG] ENV_PATH: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\env\.env
+[DEBUG] CONSOLE_LOG_DIR: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\chainlit
+[DEBUG] CHAT_LOG_DIR: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\logs
+[DEBUG] UPLOADS_DIR: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\uploads
+2025-05-02 00:17:46 - Your app is available at http://localhost:8000
+2025-05-02 00:17:46 - Translated markdown file for ja not found. Defaulting to chainlit.md.
+2025-05-02 00:17:51 - Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 88, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 既存の接続はリモート ホストに強制的に切断されました。
+2025-05-02 00:17:55 - Translated markdown file for ja not found. Defaulting to chainlit.md.
+2025-05-02 00:17:59 - Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 88, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 既存の接続はリモート ホストに強制的に切断されました。
+2025-05-02 00:18:00 - Translated markdown file for ja not found. Defaulting to chainlit.md.
+2025-05-02 00:18:03 - Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 88, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 既存の接続はリモート ホストに強制的に切断されました。
+2025-05-02 00:18:11 - Translated markdown file for ja not found. Defaulting to chainlit.md.
+2025-05-02 00:18:22 - Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "asyncio\events.py", line 88, in _run
+  File "asyncio\proactor_events.py", line 165, in _call_connection_lost
+ConnectionResetError: [WinError 10054] 既存の接続はリモート ホストに強制的に切断されました。
+Loading .env from: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\env\.env
+[DEBUG] EXE_DIR: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron
+[DEBUG] ENV_PATH: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\env\.env
+[DEBUG] CONSOLE_LOG_DIR: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\chainlit
+[DEBUG] CHAT_LOG_DIR: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\logs
+[DEBUG] UPLOADS_DIR: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\uploads
+2025-05-02 00:22:43 - Your app is available at http://localhost:8000
+2025-05-02 00:22:44 - Translated markdown file for ja not found. Defaulting to chainlit.md.
+2025-05-02 00:22:54 - Skipping data after last boundary
+アップロードディレクトリ: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\uploads
+処理開始: 領収書_IPA0000000665236.pdf, パス: F:\10_code\03_Chainlit\03_chainlit-electron-playground\chainlit_app\.files\9fa054eb-a490-4f38-b69b-be1428bca00d\46170282-0b85-4acf-a042-c3bcaf12cf8c.pdf
+2025-05-02 00:23:07 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-05-02 00:23:25 - Skipping data after last boundary
+2025-05-02 00:23:27 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-05-02 00:23:45 - Skipping data after last boundary
+2025-05-02 00:23:50 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-05-02 00:24:05 - Skipping data after last boundary
+アップロードディレクトリ: F:\10_code\03_Chainlit\03_chainlit-electron-playground\electron\uploads
+処理開始: ChatGPT Image 2025年4月1日 14_38_25.png, パス: F:\10_code\03_Chainlit\03_chainlit-electron-playground\chainlit_app\.files\9fa054eb-a490-4f38-b69b-be1428bca00d\aaa8b1b0-8500-49ed-86dc-58e0ad4506d7.png
+2025-05-02 00:24:20 - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-05-02 00:24:40 - Skipping data after last boundary

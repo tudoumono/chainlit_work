@@ -29,8 +29,13 @@ const PORT = 8000; // Chainlitサーバーのポート番号
 const isPackaged = app.isPackaged; // 本番ビルドかどうか
 
 // 実行ファイルのディレクトリを取得
-const EXE_DIR = path.dirname(process.execPath);
-const BASE_PATH = isPackaged ? path.join(process.resourcesPath) : path.join(__dirname, '..'); // ベースパス
+const EXE_DIR = isPackaged 
+  ? path.dirname(process.execPath)
+  : path.join(__dirname); // 開発環境では現在のディレクトリを使用
+
+const BASE_PATH = isPackaged 
+  ? path.join(process.resourcesPath) 
+  : path.join(__dirname, '..'); // ベースパス
 const DIR = path.join(BASE_PATH, 'chainlit_app'); // Chainlitアプリのディレクトリ
 const PY_EMBED = path.join(BASE_PATH, 'python-3.12.4-embed', 'python.exe'); // 埋め込みPythonの実行ファイル
 
@@ -432,6 +437,13 @@ function createMenu() {
 
 // アプリケーション初期化
 app.whenReady().then(() => {
+  console.log('Application is ready');
+  console.log('EXE_DIR:', EXE_DIR);
+  console.log('BASE_PATH:', BASE_PATH);
+  console.log('DIR:', DIR);
+  console.log('ENV_DIR:', ENV_DIR);
+  console.log('CHAT_LOG_DIR:', CHAT_LOG_DIR);
+  console.log('CONSOLE_LOG_DIR:', CONSOLE_LOG_DIR);
   createWindow();
   createMenu(); // メニューを作成
   

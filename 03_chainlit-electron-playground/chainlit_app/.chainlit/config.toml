@@ -36,10 +36,10 @@ edit_message = true
 
 # Authorize users to spontaneously upload files with messages
 [features.spontaneous_file_upload]
-enabled = false
-accept = ["*/*"]  # すべてのファイルタイプを受け付ける
+enabled = true
+accept = ["*/*"]  # すべてのファイルタイプを受け入れる
 max_files = 10
-max_size_mb = 100
+max_size_mb = 20
 
 [features.audio]
     # Sample rate of the audio
