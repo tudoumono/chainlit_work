@@ -1,0 +1,63 @@
+{
+  "name": "chainlit-electron-wrapper",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.example.chainlit",
+    "productName": "ChainlitApp",
+    "icon": "./assets/icon.ico",
+    "afterPack": "./build-scripts/after-pack.js",
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "./assets/icon.ico"
+    },
+    "mac": {
+      "icon": "./assets/icon.icns"
+    },
+    "linux": {
+      "icon": "./assets/icon.png"
+    },
+    "asarUnpack": [
+      "**/python-3.12.4-embed/**",
+      "**/chainlit_app/**"
+    ],
+    "extraResources": [
+      {
+        "from": "../python-3.12.4-embed",
+        "to": "python-3.12.4-embed"
+      },
+      {
+        "from": "../chainlit_app",
+        "to": "chainlit_app"
+      }
+    ]
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.8.0",
+    "@electron-forge/maker-deb": "^7.8.0",
+    "@electron-forge/maker-rpm": "^7.8.0",
+    "@electron-forge/maker-squirrel": "^7.8.0",
+    "@electron-forge/maker-zip": "^7.8.0",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.8.0",
+    "@electron-forge/plugin-fuses": "^7.8.0",
+    "@electron/fuses": "^1.8.0",
+    "electron": "^28.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "dependencies": {
+    "electron-squirrel-startup": "^1.0.1",
+    "iconv-lite": "^0.6.3",
+    "tree-kill": "^1.2.2"
+  }
+}

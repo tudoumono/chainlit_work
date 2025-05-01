@@ -3,6 +3,7 @@ main.py － Chainlit + OpenAI チャットアプリ
 =========================================
 このファイルを実行すると、ブラウザでチャット UI が立ち上がります。
 利用者は「GPT‑3.5 / GPT‑4 / GPT‑4o」を途中でも自由に切り替えて対話できます。
+ファイルアップロード機能により、データの分析も可能です。
 
 --------------------------------------------------------------------------
 💡 "ざっくり全体像"
@@ -13,217 +14,174 @@ main.py － Chainlit + OpenAI チャットアプリ
 4. **履歴保存**    : 「保存」ボタンで TXT にエクスポート & 自動TXT保存機能追加
 5. **モデル変更**  : いつでも「モデル変更」ボタンで再選択できる
 6. **停止・再開**  : ⏹ で生成中断、▶ で続きから再開
+7. **ファイル分析**: ファイルアップロード機能で様々なファイルに関する分析が可能
 """
 
 # ────────────────────────────────────────────────────────────────
 # 0. ライブラリの読み込み
 # ────────────────────────────────────────────────────────────────
-import os, json, sys
-from datetime import datetime
-from pathlib import Path
+import os
+import sys
+import json
+import chainlit as cl
 
-# ▼ サードパーティ（外部）ライブラリ
-from dotenv import load_dotenv, find_dotenv           # .env から変数を読むお手軽ユーティリティ
-import chainlit as cl                    # チャットUIを超簡単に作れるフレームワーク
-from openai import AsyncOpenAI           # OpenAI (GPT など) とやり取りする公式クライアント
-
-# ────────────────────────────────────────────────────────────────
-# 1. 初期設定とパス設定
-# ────────────────────────────────────────────────────────────────
-# Electronから渡されるEXE_DIRを取得（アプリケーションの実行ディレクトリ）
-EXE_DIR = os.getenv("EXE_DIR", os.getcwd())
-
-# 適切な .env ファイルを読み込む（優先順位: env/.env > .env）
-ENV_PATH = os.path.join(EXE_DIR, "env", ".env")
-if os.path.exists(ENV_PATH):
-    load_dotenv(ENV_PATH)
-    print(f"Loading .env from: {ENV_PATH}")
-else:
-    # 従来のパスをフォールバックとして使用
-    load_dotenv(find_dotenv())
-    print(f"Loading .env from default location")
-
-# 各種ディレクトリパスの設定（環境変数から取得または既定値を使用）
-CONSOLE_LOG_DIR = os.getenv("CONSOLE_LOG_DIR", os.path.join(EXE_DIR, "chainlit"))
-CHAT_LOG_DIR = os.getenv("CHAT_LOG_DIR", os.path.join(EXE_DIR, "logs"))
-
-# デバッグ出力
-print(f"[DEBUG] EXE_DIR: {EXE_DIR}")
-print(f"[DEBUG] ENV_PATH: {ENV_PATH}")
-print(f"[DEBUG] CONSOLE_LOG_DIR: {CONSOLE_LOG_DIR}")
-print(f"[DEBUG] CHAT_LOG_DIR: {CHAT_LOG_DIR}")
-
-# ディレクトリが存在しない場合は作成
-os.makedirs(CONSOLE_LOG_DIR, exist_ok=True)
-os.makedirs(CHAT_LOG_DIR, exist_ok=True)
-
-# 環境変数の読み込み
-DEBUG_MODE = os.getenv("DEBUG_MODE") == "1"
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-# セッションID（チャット履歴の識別子）
-SESSION_ID = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-# ここではクライアントの初期化はまだしない（APIキーがないかもしれないため）
-client = None
-if OPENAI_API_KEY:
-    client = AsyncOpenAI(api_key=OPENAI_API_KEY)
-
+# ▼ 自作モジュール
+import config               # 設定と初期化
+import models_utils         # モデル関連
+import history_utils        # チャット履歴保存関連
+import ui_actions           # UIアクション関連
+import file_utils           # ファイル処理関連
 
 # ────────────────────────────────────────────────────────────────
-# 2. "どのGPTを使うか" のリスト定義
+# 1. 初期設定
 # ────────────────────────────────────────────────────────────────
-MODELS = [
-    ("GPT‑3.5 Turbo", "gpt-3.5-turbo"),   # 軽量・高速・低価格
-    ("GPT‑4 Turbo",   "gpt-4-turbo"),     # GPT‑4ベースで高速・安価
-    ("GPT‑4o",        "gpt-4o"),          # 最新・マルチモーダル
-]
-get_prefix = lambda: "🛠️【デバッグモード】\n" if DEBUG_MODE else ""
+# 環境設定を読み込む
+settings = config.setup_environment()
+
+# OpenAIクライアントの初期化
+client = models_utils.init_openai_client(settings["OPENAI_API_KEY"])
 
 # ────────────────────────────────────────────────────────────────
-# 3. チャット履歴の自動保存機能
-# ────────────────────────────────────────────────────────────────
-def save_chat_history_txt(history, is_manual=False):
-    """
-    チャット履歴をTXTファイルに保存する
-    is_manual: 手動保存の場合はTrue（保存ボタンが押された場合）
-    """
-    if not history:
-        return None
-    
-    # 出力ディレクトリはCHAT_LOG_DIRを使用
-    out_dir = Path(CHAT_LOG_DIR)
-    out_dir.mkdir(exist_ok=True)
-    
-    # ファイル名（自動保存と手動保存で区別）
-    prefix = "manual" if is_manual else "auto"
-    filename = f"{prefix}_chat_{SESSION_ID}.txt"
-    filepath = out_dir / filename
-    
-    # チャット履歴をテキスト形式に変換
-    lines = ["===== チャット履歴 =====", f"日時: {datetime.now():%Y/%m/%d %H:%M:%S}", ""]
-    
-    for i, msg in enumerate(history):
-        role = msg.get("role", "unknown")
-        content = msg.get("content", "")
-        
-        # 役割に応じて整形（ユーザーとアシスタントを分かりやすく）
-        if role == "user":
-            lines.append(f"👤 ユーザー（質問 {i//2+1}）:")
-        elif role == "assistant":
-            lines.append(f"🤖 AI（回答 {i//2+1}）:")
-        else:
-            lines.append(f"📝 {role}:")
-        
-        # 内容を追加（インデント付き）
-        for line in content.split("\n"):
-            lines.append(f"  {line}")
-        
-        # メッセージ間に空行を入れる
-        lines.append("")
-    
-    # ファイルに書き込む
-    filepath.write_text("\n".join(lines), encoding="utf-8")
-    
-    return filepath
-
-# ────────────────────────────────────────────────────────────────
-# 4. 共通アクション（保存・モデル変更・停止・再開）
-# ────────────────────────────────────────────────────────────────
-def common_actions(show_resume: bool = False):
-    """画面下に並べるボタンを共通関数で管理（DRY）"""
-    base = [
-        cl.Action(name="save",          label="保存",        payload={"action": "save"}),
-        cl.Action(name="change_model",  label="モデル変更",  payload={"action": "change_model"}),
-        cl.Action(name="cancel",        label="⏹ 停止",      payload={"action": "cancel"}),
-        cl.Action(name="shutdown",      label="🔴 プロセス完全終了", payload={"action": "shutdown"}),
-    ]
-    # 停止後にだけ「▶ 続き」ボタンを出す
-    if show_resume:
-        base.append(cl.Action(name="resume", label="▶ 続き", payload={"action": "resume"}))
-    return base
-
-# ────────────────────────────────────────────────────────────────
-# 5. モデル選択UI
-# ────────────────────────────────────────────────────────────────
-async def show_model_selection():
-    await cl.Message(
-        content=f"{get_prefix()}🧠 使用するモデルを選んでください：",
-        actions=[
-            cl.Action(name="select_model", label=label, payload={"model": val})
-            for label, val in MODELS
-        ],
-    ).send()
-
-# ────────────────────────────────────────────────────────────────
-# 6. OpenAI へ質問を投げる関数
-# ────────────────────────────────────────────────────────────────
-async def ask_openai(user_message: str,
-                     history: list[dict],
-                     model: str,
-                     temperature: float = 0.7,
-                     max_tokens: int = 1024):
-    """
-    * 普段:   OpenAI に問い合わせ、ストリーミングで返す
-    * デバッグ: ダミー文字列を返す
-    """
-    if DEBUG_MODE:
-        async def fake_stream():
-            for chunk in ["（デバッグ）", "これは ", "OpenAI を ", "呼び出して ", "いません。"]:
-                yield type("Chunk", (), {
-                    "choices": [type("Choice", (), {
-                        "delta": type("Delta", (), {"content": chunk})()
-                    })()]
-                })()
-        return fake_stream()
-
-    messages = history + [{"role": "user", "content": user_message}]
-    return await client.chat.completions.create(
-        model=model,
-        messages=messages,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        stream=True,
-    )
-
-# ────────────────────────────────────────────────────────────────
-# 7. Chainlit イベントハンドラ
+# 2. Chainlit イベントハンドラ
 # ────────────────────────────────────────────────────────────────
 @cl.on_chat_start
 async def start():
-    if not OPENAI_API_KEY:
-        # 🔽 UI側に警告を表示
+    # セッション変数の初期化
+    cl.user_session.set("files", {})
+    
+    if not settings["OPENAI_API_KEY"]:
+        # APIキーがない場合は警告表示
         await cl.Message(
             content="❌ **OpenAI APIキーが設定されていません！**\n"
                     "`.env` ファイルに以下のように設定してください：\n"
-                    "`OPENAI_API_KEY=\"sk-xxxx...\"`\n"
-                    "（デバッグ）これは OpenAI を 呼び出して いません。\n"
-                    "質問を入力してください。\n"
-                    ,
-            actions=common_actions(),
+                    "`OPENAI_API_KEY=\"sk-xxxx...\"`",
+            actions=ui_actions.common_actions(),
         ).send()
         return
 
-    # ✅ 通常の開始処理
-    await show_model_selection()
+    # 通常の開始処理
+    await ui_actions.show_welcome_message(models_utils.MODELS)
 
 @cl.action_callback("change_model")
 async def change_model(_):
-    await show_model_selection()
+    await ui_actions.show_model_selection(models_utils.MODELS, config.get_prefix(settings["DEBUG_MODE"]))
 
 @cl.action_callback("select_model")
 async def model_selected(action: cl.Action):
-    cl.user_session.set("selected_model", action.payload["model"])
+    model = action.payload["model"]
+    cl.user_session.set("selected_model", model)
+    
+    model_label = models_utils.get_model_label(model)
+    
     await cl.Message(
-        content=f"{get_prefix()}✅ モデル「{action.payload['model']}」を選択しました。質問をどうぞ！",
-        actions=common_actions(),
+        content=f"{config.get_prefix(settings['DEBUG_MODE'])}✅ モデル「{model_label}」を選択しました。質問するか、ファイルをアップロードしてください！",
+        actions=ui_actions.common_actions(),
     ).send()
+
+# ★ ファイルアップロードボタン
+@cl.action_callback("upload_file")
+async def upload_file_action(_):
+    files = await cl.AskFileMessage(
+        content="分析したいファイルをアップロードしてください。\n"
+                "サポートしているファイル形式: CSV, Excel, テキスト, JSON, PDF, 画像",
+        accept=["text/csv", "application/vnd.ms-excel", 
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+                "text/plain", "application/json", "application/pdf", 
+                "image/png", "image/jpeg", "image/jpg"],
+        max_size_mb=10,
+        timeout=180,
+    ).send()
+
+    # ファイル処理を切り出したモジュールに委譲
+    processed_files = await file_utils.handle_file_upload(files, settings["UPLOADS_DIR"])
+    
+    # 処理したファイル情報をセッションに保存
+    current_files = cl.user_session.get("files", {})
+    current_files.update(processed_files)
+    cl.user_session.set("files", current_files)
+
+@cl.action_callback("show_details")
+async def show_file_details(action):
+    file_name = action.payload["file_name"]
+    files = cl.user_session.get("files", {})
+    
+    if file_name not in files:
+        await cl.Message(content=f"エラー: ファイル {file_name} が見つかりません。").send()
+        return
+    
+    file_info = files[file_name]
+    
+    if file_info["type"] in ["csv", "excel"]:
+        await file_utils.display_dataframe_details(file_info["dataframe"], file_name)
+    elif file_info["type"] == "text":
+        await cl.Message(
+            content=f"### {file_name} の全文:\n```\n{file_info['full_content']}\n```"
+        ).send()
+    elif file_info["type"] == "json":
+        json_str = json.dumps(file_info["content"], indent=2, ensure_ascii=False)
+        await cl.Message(
+            content=f"### {file_name} の内容:\n```json\n{json_str}\n```"
+        ).send()
+    else:
+        await cl.Message(content=f"このファイル形式の詳細表示はサポートされていません: {file_info['type']}").send()
+
+@cl.action_callback("analyze_file")
+async def analyze_file(action):
+    file_name = action.payload["file_name"]
+    files = cl.user_session.get("files", {})
+    
+    if file_name not in files:
+        await cl.Message(content=f"エラー: ファイル {file_name} が見つかりません。").send()
+        return
+    
+    file_info = files[file_name]
+    
+    # ファイルタイプ別のプロンプト
+    prompt = f"ファイル「{file_name}」の分析をお願いします。"
+    
+    if file_info["type"] in ["csv", "excel"]:
+        # データフレームを文字列に変換
+        csv_str = file_info["dataframe"].head(20).to_csv(index=False)
+        prompt = (
+            f"以下のCSVデータ（「{file_name}」の最初の20行）を分析してください。"
+            "基本的な統計情報、データの傾向、および特徴をまとめてください。\n\n"
+            f"```\n{csv_str}\n```"
+        )
+    elif file_info["type"] == "text":
+        # テキストの最初の部分（長すぎる場合は切り詰める）
+        text_content = file_info["full_content"]
+        if len(text_content) > 10000:
+            text_content = text_content[:10000] + "...(以下省略)..."
+        
+        prompt = (
+            f"以下のテキスト（「{file_name}」）を分析し、要約してください。"
+            "主なトピック、重要なポイント、および興味深い発見を含めてください。\n\n"
+            f"```\n{text_content}\n```"
+        )
+    elif file_info["type"] == "json":
+        # JSONデータを文字列に変換
+        json_str = json.dumps(file_info["content"], indent=2)
+        if len(json_str) > 10000:
+            json_str = json_str[:10000] + "...(以下省略)..."
+        
+        prompt = (
+            f"以下のJSONデータ（「{file_name}」）を分析してください。"
+            "データ構造、主要な属性、および重要な値を説明してください。\n\n"
+            f"```json\n{json_str}\n```"
+        )
+    
+    # プロンプトをメッセージとして送信
+    msg = cl.Message(content=prompt)
+    await on_message(msg)
 
 # ★ 停止ボタン
 @cl.action_callback("cancel")
 async def cancel_stream(_):
     cl.user_session.set("cancel_flag", True)
-    await cl.Message(content="⏹ 生成を停止します…", actions=common_actions(show_resume=True)).send()
+    await cl.Message(
+        content="⏹ 生成を停止します…", 
+        actions=ui_actions.common_actions(show_resume=True)
+    ).send()
 
 # ★ 再開ボタン
 @cl.action_callback("resume")
@@ -242,23 +200,27 @@ async def save_history(_):
     if not history:
         return
     
-    # JSON形式での保存はコメントアウト
-    # out_dir = Path(CHAT_LOG_DIR)
-    # out_dir.mkdir(exist_ok=True)
-    # json_fp = out_dir / f"manual_chat_{SESSION_ID}.json"
-    # json_fp.write_text(json.dumps(history, indent=2, ensure_ascii=False), encoding="utf-8")
-    
     # TXT形式で保存
-    txt_fp = save_chat_history_txt(history, is_manual=True)
+    txt_fp = history_utils.save_chat_history_txt(
+        history, 
+        settings["CHAT_LOG_DIR"], 
+        settings["SESSION_ID"], 
+        is_manual=True
+    )
     
     # 保存したファイルを表示
     elements = [
-        cl.File(name=txt_fp.name, path=str(txt_fp), display="inline", 
-                mime="text/plain", description="テキスト形式（読みやすい形式）")
+        cl.File(
+            name=txt_fp.name, 
+            path=str(txt_fp), 
+            display="inline", 
+            mime="text/plain", 
+            description="テキスト形式（読みやすい形式）"
+        )
     ]
     
     await cl.Message(
-        content=f"このチャネルでのやり取りを保存しました。\n保存先: {CHAT_LOG_DIR}",
+        content=f"このチャネルでのやり取りを保存しました。\n保存先: {settings['CHAT_LOG_DIR']}",
         elements=elements
     ).send()
 
@@ -266,35 +228,44 @@ async def save_history(_):
 @cl.action_callback("shutdown")
 async def shutdown_app(_):
     await cl.Message(content="🔴 サーバーを終了します…").send()
-    await cl.sleep(0.1)           # メッセージ送信猶予
-    os._exit(0)                   # 即プロセス終了（SystemExitを無視して強制終了）
+    await cl.sleep(0.1)  # メッセージ送信猶予
+    os._exit(0)          # 即プロセス終了（SystemExitを無視して強制終了）
 
 # メインのメッセージハンドラ
 @cl.on_message
 async def on_message(msg: cl.Message, resume: bool = False):
-    """
-    resume=True のときは「続きからお願いします」などの内部呼び出し用
-    """
-    # -- 事前リセットと履歴処理 ------------------------------
-    cl.user_session.set("cancel_flag", False)             # ★ 停止フラグを毎回リセット
+    """メインのメッセージハンドラ"""
+    # 事前状態のリセットと履歴処理
+    cl.user_session.set("cancel_flag", False)
     history = cl.user_session.get("chat_history", [])
-    if not resume:                                        # 本来のユーザ入力だけ履歴に残す
+    
+    if not resume:
         history.append({"role": "user", "content": msg.content})
-        cl.user_session.set("last_user_msg", msg.content) # ★ 再開用に保持
+        cl.user_session.set("last_user_msg", msg.content)
 
     model = cl.user_session.get("selected_model", "gpt-4o")
-
-    # 空メッセージを作って、あとで逐次 update()
     stream_msg = await cl.Message(content="").send()
 
     try:
-        stream = await ask_openai(msg.content, history, model)
+        # ファイル参照がないかチェック
+        files = cl.user_session.get("files", {})
+        message_content = msg.content
+        
+        # ファイル参照がある場合、関連コンテンツを追加
+        message_content = file_utils.get_file_reference_content(message_content, files)
+        
+        stream = await models_utils.ask_openai(
+            client, 
+            message_content, 
+            history, 
+            model, 
+            debug_mode=settings["DEBUG_MODE"]
+        )
         assistant_text = ""
 
         async for chunk in stream:
-            # ★ 停止ボタンが押されたら break
             if cl.user_session.get("cancel_flag"):
-                await stream.aclose()     # ストリームを閉じて即終了
+                await stream.aclose()
                 break
 
             delta = chunk.choices[0].delta.content
@@ -305,20 +276,23 @@ async def on_message(msg: cl.Message, resume: bool = False):
 
         if not cl.user_session.get("cancel_flag"):
             history.append({"role": "assistant", "content": assistant_text})
-            
-            # 自動保存機能
-            save_chat_history_txt(history)
+            # 自動保存
+            history_utils.save_chat_history_txt(
+                history, 
+                settings["CHAT_LOG_DIR"], 
+                settings["SESSION_ID"]
+            )
 
     except Exception as e:
         await cl.Message(content=f"❌ エラーが発生しました: {e}").send()
 
     finally:
         cl.user_session.set("chat_history", history)
-
-        # ★ 停止された場合は ▶ ボタンを表示、それ以外は通常ボタン
+        
+        # 停止状態に応じたボタン表示
         await cl.Message(
             content="✅ 応答完了！次の操作を選んでください：",
-            actions=common_actions(show_resume=cl.user_session.get("cancel_flag"))
+            actions=ui_actions.common_actions(show_resume=cl.user_session.get("cancel_flag"))
         ).send()
 
 # ────────────────────────────────────────────────────────────────
