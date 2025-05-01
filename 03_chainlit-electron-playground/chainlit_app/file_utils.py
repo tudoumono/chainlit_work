@@ -324,7 +324,6 @@ async def display_dataframe_details(df: pd.DataFrame, filename: str) -> None:
                     f"- 列数: {len(df.columns)} 列\n\n"
                     f"{stats_text}",
             elements=elements,
-            tooltip="データフレーム詳細情報"  # ツールチップの追加
         ).send()
     except Exception as e:
         print(f"データフレーム詳細表示エラー: {str(e)}")
@@ -394,13 +393,11 @@ async def handle_file_upload(files, upload_dir=UPLOADS_DIR) -> Dict[str, Dict[st
                     await cl.Message(
                         content=f"画像プレビュー: {file.name}",
                         elements=[cl.Image(name=file.name, path=file.path)],
-                        tooltip="画像プレビュー"  # ツールチップの追加
                     ).send()
                 elif file_type == "pdf":
                     await cl.Message(
                         content=f"PDFプレビュー: {file.name}",
                         elements=[cl.File(name=file.name, path=file.path, display="inline", mime="application/pdf")],
-                        tooltip="PDFプレビュー"  # ツールチップの追加
                     ).send()
             
             except Exception as e:
@@ -421,7 +418,6 @@ async def handle_file_upload(files, upload_dir=UPLOADS_DIR) -> Dict[str, Dict[st
                        "- このCSVの要約を教えて\n"
                        "- データの傾向を分析して\n"
                        "- この画像に何が写っている？",
-                tooltip="ヒント: ファイル分析の質問例"  # ツールチップの追加
             ).send()
         
     except Exception as e:

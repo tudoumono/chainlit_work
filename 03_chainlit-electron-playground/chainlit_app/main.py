@@ -74,20 +74,7 @@ async def start():
         cl.user_session.set("cancel_flag", False)
         cl.user_session.set("partial_response", "")
         cl.user_session.set("selected_model", "gpt-4o")
-        
-        # アバターの設定
-        try:
-            await cl.Avatar(
-                name="assistant",
-                url="https://avatars.githubusercontent.com/u/128686189?v=4"
-            ).send()
-            
-            await cl.Avatar(
-                name="user",
-                url="https://ui-avatars.com/api/?name=U&background=random"
-            ).send()
-        except Exception as avatar_err:
-            print(f"[WARNING] アバター設定中にエラーが発生: {str(avatar_err)}")
+
         
         if not settings["API_KEY_VALID"]:
             # APIキーがない場合は警告表示
