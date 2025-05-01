@@ -39,7 +39,8 @@ chainlit_app/nuitka-crash-report.xml
 # npm install で再構築可能
 electron/node_modules
 electron/.chainlit
-
+electron/chainlit
+electron/logs
 # Electronが自動生成するバイナリやキャッシュの一時ファイル
 dist/
 out/

@@ -317,74 +317,88 @@ async def display_dataframe_details(df, filename):
 
 # ファイルアップロード処理
 async def handle_file_upload(files, upload_dir=UPLOADS_DIR):
-    """ファイルアップロードを処理する"""
+    """ファイルアップロードを処理する（より軽量な実装）"""
     if not files:
         await cl.Message(content="ファイルがアップロードされませんでした。").send()
         return {}
     
     # ディレクトリが存在しない場合は作成
     os.makedirs(upload_dir, exist_ok=True)
-    print(f"アップロードディレクトリ: {upload_dir}")
     
     processed_files = {}
     
-    # 古いメッセージを使わず、代わりに新しいメッセージを送信する方式に変更
+    # 処理開始メッセージ
     await cl.Message(content="ファイルを処理しています...").send()
     
     try:
-        # 複数ファイルの場合は、それぞれ処理
-        for index, file in enumerate(files):
+        # 全ファイルをまず簡単に処理して表示する（重い処理は避ける）
+        for file in files:
             try:
-                # 新しいメッセージを送信（更新ではなく）
-                await cl.Message(content=f"ファイル {file.name} を処理中... ({index+1}/{len(files)})").send()
+                # ファイルの基本情報だけを取得（軽量処理）
+                file_extension = os.path.splitext(file.name)[1].lower()
+                file_type = get_file_type(file_extension)
                 
-                # ファイル処理
-                file_info = process_file(file)
+                # 基本情報をメッセージとして表示
+                await cl.Message(content=f"ファイル {file.name} を処理中...").send()
+                
+                # 最小限のファイル情報を生成
+                file_info = {
+                    "type": file_type,
+                    "path": file.path,
+                    "name": file.name
+                }
+                
+                # 辞書に情報を保存
                 processed_files[file.name] = file_info
                 
-                # ファイル情報を表示
-                file_description = generate_file_description(file_info)
-                
+                # ファイルタイプに応じたメッセージを表示
                 await cl.Message(
-                    content=f"### ファイルがアップロードされました: {file.name}\n\n{file_description}",
+                    content=f"### ファイルがアップロードされました: {file.name}",
                     actions=[
-                        cl.Action(name="show_details", label="📊 詳細を見る", payload={"file_name": file.name}),
                         cl.Action(name="analyze_file", label="🔍 このファイルを分析", payload={"file_name": file.name})
                     ]
                 ).send()
-
                 
-                # 画像ファイルの場合はプレビューを表示
-                if file_info["type"] == "image":
+                # ファイルタイプに応じたプレビュー表示
+                if file_type == "image":
                     await cl.Message(
                         content=f"画像プレビュー: {file.name}",
                         elements=[cl.Image(name=file.name, path=file.path)]
                     ).send()
-                
-                # PDFファイルの場合はプレビューを表示
-                elif file_info["type"] == "pdf":
+                elif file_type == "pdf":
                     await cl.Message(
                         content=f"PDFプレビュー: {file.name}",
                         elements=[cl.File(name=file.name, path=file.path, display="inline", mime="application/pdf")]
                     ).send()
-                
+            
             except Exception as e:
-                print(f"ファイル処理エラー: {str(e)}")
-                import traceback
-                traceback.print_exc()
                 await cl.Message(content=f"エラー: {file.name}の処理中に問題が発生しました: {str(e)}").send()
                 continue
         
-        # 処理完了メッセージ
+        # 完了メッセージ
         await cl.Message(content="全てのファイルの処理が完了しました").send()
         
     except Exception as e:
-        print(f"アップロード全体エラー: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        await cl.Message(content=f"エラー: ファイルアップロード処理中に問題が発生しました: {str(e)}").send()
+        await cl.Message(content=f"エラー: ファイル処理中に問題が発生しました: {str(e)}").send()
     
     return processed_files
+
+def get_file_type(extension):
+    """ファイル拡張子からタイプを判断する簡易関数"""
+    if extension in ['.csv']:
+        return "csv"
+    elif extension in ['.xlsx', '.xls']:
+        return "excel"
+    elif extension in ['.txt', '.md', '.py', '.js', '.html', '.css']:
+        return "text"
+    elif extension in ['.json']:
+        return "json"
+    elif extension in ['.png', '.jpg', '.jpeg', '.gif', '.bmp']:
+        return "image"
+    elif extension in ['.pdf']:
+        return "pdf"
+    else:
+        return "unknown"
 
 
 def get_file_reference_content(message_content, files):

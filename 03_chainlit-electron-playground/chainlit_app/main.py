@@ -136,43 +136,33 @@ async def analyze_file(action):
     
     file_info = files[file_name]
     
-    # ファイルタイプ別のプロンプト
-    prompt = f"ファイル「{file_name}」の分析をお願いします。"
-    
-    if file_info["type"] in ["csv", "excel"]:
-        # データフレームを文字列に変換
-        csv_str = file_info["dataframe"].head(20).to_csv(index=False)
-        prompt = (
-            f"以下のCSVデータ（「{file_name}」の最初の20行）を分析してください。"
-            "基本的な統計情報、データの傾向、および特徴をまとめてください。\n\n"
-            f"```\n{csv_str}\n```"
-        )
-    elif file_info["type"] == "text":
-        # テキストの最初の部分（長すぎる場合は切り詰める）
-        text_content = file_info["full_content"]
-        if len(text_content) > 10000:
-            text_content = text_content[:10000] + "...(以下省略)..."
+    # ここで初めて詳細なファイル処理を行う
+    try:
+        await cl.Message(content=f"ファイル「{file_name}」を詳細に分析しています...").send()
         
-        prompt = (
-            f"以下のテキスト（「{file_name}」）を分析し、要約してください。"
-            "主なトピック、重要なポイント、および興味深い発見を含めてください。\n\n"
-            f"```\n{text_content}\n```"
-        )
-    elif file_info["type"] == "json":
-        # JSONデータを文字列に変換
-        json_str = json.dumps(file_info["content"], indent=2)
-        if len(json_str) > 10000:
-            json_str = json_str[:10000] + "...(以下省略)..."
+        # ファイルタイプに応じた処理
+        if file_info["type"] == "csv":
+            # ここでCSVを読み込む
+            df = pd.read_csv(file_info["path"])
+            file_info["dataframe"] = df
+            csv_str = df.head(20).to_csv(index=False)
+            prompt = (
+                f"以下のCSVデータ（「{file_name}」の最初の20行）を分析してください。"
+                "基本的な統計情報、データの傾向、および特徴をまとめてください。\n\n"
+                f"```\n{csv_str}\n```"
+            )
+        # その他のファイルタイプも同様に処理
+        elif file_info["type"] == "pdf":
+            prompt = f"PDFファイル「{file_name}」を分析してください。内容の要約や主要なポイントを説明してください。"
+        else:
+            prompt = f"ファイル「{file_name}」の分析をお願いします。"
         
-        prompt = (
-            f"以下のJSONデータ（「{file_name}」）を分析してください。"
-            "データ構造、主要な属性、および重要な値を説明してください。\n\n"
-            f"```json\n{json_str}\n```"
-        )
+        # 分析のためのプロンプトを送信
+        msg = cl.Message(content=prompt)
+        await on_message(msg)
     
-    # プロンプトをメッセージとして送信
-    msg = cl.Message(content=prompt)
-    await on_message(msg)
+    except Exception as e:
+        await cl.Message(content=f"ファイル分析中にエラーが発生しました: {str(e)}").send()
 
 # ★ 停止ボタン
 @cl.action_callback("cancel")
