@@ -24,11 +24,11 @@ async def handle_error(e: Exception, context: str = "処理中", level: str = ER
     
     # エラーレベルに応じたアイコンとスタイル
     icons = {
-        ERROR: "❌",
-        WARNING: "⚠️",
-        INFO: "ℹ️",
+        ERROR: "エラー",
+        WARNING: "警告",
+        INFO: "情報",
     }
-    icon = icons.get(level, "❓")
+    icon = icons.get(level, "問題")
     
     # エラータイプに応じたメッセージ
     if isinstance(e, ValueError):
@@ -44,7 +44,7 @@ async def handle_error(e: Exception, context: str = "処理中", level: str = ER
     # アクションボタンの追加（適切な場合）
     actions = []
     if level == ERROR:
-        actions.append(cl.Action(name="retry", label="🔄 再試行"))
+        actions.append(cl.Action(name="retry", label="再試行", payload={"action": "retry"}))
     
     # エラーメッセージの送信
     await cl.Message(content=message, actions=actions).send()
