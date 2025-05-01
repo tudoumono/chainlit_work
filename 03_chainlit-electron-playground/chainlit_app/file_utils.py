@@ -232,8 +232,12 @@ async def handle_file_upload(files, upload_dir=UPLOADS_DIR):
     for file in files:
         # ファイルを保存
         file_path = os.path.join(upload_dir, file.name)
-        with open(file_path, "wb") as f:
-            f.write(await file.get_bytes())
+        # 変更前: f.write(await file.get_bytes())
+        # 変更後:
+        with open(file.path, "rb") as src_file:
+            file_content = src_file.read()
+            with open(file_path, "wb") as dest_file:
+                dest_file.write(file_content)
         
         # ファイルクラスを更新（パスを保存場所に変更）
         file.path = file_path

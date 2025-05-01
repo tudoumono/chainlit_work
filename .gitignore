@@ -2,8 +2,8 @@
 # デバック
 aaa
 main.py
-.env_bk
 
+.env_bk
 
 # VSCode設定（チームで共有不要なら無視）
 .vscode/
