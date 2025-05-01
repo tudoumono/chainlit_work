@@ -24,7 +24,7 @@ chainlit_app/chatlogs/**
 !chainlit_app/chatlogs/.gitkeep
 
 # 自動生成されるChainlit関連
-chainlit_app/.chainlit
+# chainlit_app/.chainlit
 
 # Nuitka自動生成される
 chainlit_app/main.build
