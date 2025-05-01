@@ -5,6 +5,7 @@ config.py - 設定と初期化モジュール
 """
 
 import os
+import re
 from datetime import datetime
 from pathlib import Path
 from dotenv import load_dotenv, find_dotenv
@@ -45,6 +46,15 @@ def setup_environment():
     # 環境変数の読み込み
     DEBUG_MODE = os.getenv("DEBUG_MODE") == "1"
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    
+    # APIキーのバリデーション
+    API_KEY_VALID = validate_api_key(OPENAI_API_KEY)
+    
+    # 検証結果をログに出力
+    if API_KEY_VALID:
+        print(f"[INFO] OpenAI API key validation: OK")
+    else:
+        print(f"[WARNING] OpenAI API key validation: INVALID or MISSING")
 
     # セッションID（チャット履歴の識別子）
     SESSION_ID = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -58,6 +68,7 @@ def setup_environment():
         "UPLOADS_DIR": UPLOADS_DIR,
         "DEBUG_MODE": DEBUG_MODE,
         "OPENAI_API_KEY": OPENAI_API_KEY,
+        "API_KEY_VALID": API_KEY_VALID,
         "SESSION_ID": SESSION_ID
     }
 
@@ -65,3 +76,26 @@ def setup_environment():
 def get_prefix(debug_mode=False):
     """デバッグモード用のプレフィックスを返す"""
     return "🛠️【デバッグモード】\n" if debug_mode else ""
+
+def validate_api_key(api_key):
+    """APIキーの形式を検証する"""
+    if not api_key:
+        return False
+    
+    # OpenAI APIキーのパターン（sk-で始まる文字列）
+    pattern = r'^sk-[a-zA-Z0-9]{20,}'
+    return bool(re.match(pattern, api_key))
+
+def sanitize_input(text):
+    """ユーザー入力をサニタイズする"""
+    if not text:
+        return ""
+    
+    # 簡易的なサニタイズ
+    # スクリプトタグの削除
+    text = re.sub(r'<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>', '', text, flags=re.IGNORECASE)
+    
+    # 基本的なHTMLタグのエスケープ
+    text = text.replace('<', '&lt;').replace('>', '&gt;')
+    
+    return text
