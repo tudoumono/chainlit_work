@@ -1,0 +1,4 @@
+chainlit==2.5.5
+openai>=1.6.0
+python-dotenv>=1.0.0
+typing-extensions>=4.5.0
