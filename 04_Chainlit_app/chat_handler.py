@@ -1,3 +1,4 @@
+import traceback
 """
 チャット処理関連のモジュール
 メッセージの処理、チャット履歴の管理を行います
@@ -16,8 +17,11 @@ from models import chat_completion, get_current_model
 from config import CHAT_HISTORY_FILE
 from file_handler import get_file_content
 
-# ロギング設定
-logger = logging.getLogger(__name__)
+# ロギングヘルパーからロガーを取得
+from log_helper import get_logger
+
+# このモジュール用のロガーを取得
+logger = get_logger(__name__)
 
 # チャット履歴
 chat_history: List[Dict[str, Any]] = []
@@ -61,9 +65,22 @@ async def process_message(
         if files:
             for file in files:
                 try:
-                    content = await file.get_content()
+                    # ファイル内容の取得方法を修正
+                    # 直接contentプロパティを使用するか、ファイルパスから読み込む
+                    if hasattr(file, 'content') and file.content:
+                        content = file.content
+                        file_content = content.decode('utf-8', errors='replace')
+                    elif hasattr(file, 'path') and file.path:
+                        # ファイルパスから読み込む
+                        with open(file.path, 'rb') as f:
+                            content = f.read()
+                            file_content = content.decode('utf-8', errors='replace')
+                    else:
+                        logger.error(f"ファイル {file.name} の内容を取得できません")
+                        file_content = "(読み込みエラー: ファイル内容を取得できません)"
+                    
                     file_contents.append(
-                        f"\n\n### ファイル: {file.name} ###\n{content.decode('utf-8', errors='replace')}"
+                        f"\n\n### ファイル: {file.name} ###\n{file_content}"
                     )
                 except Exception as e:
                     logger.error(f"ファイル内容の取得中にエラーが発生しました: {e}")
@@ -109,10 +126,13 @@ async def process_message(
         }
         
     except Exception as e:
-        logger.error(f"メッセージ処理中にエラーが発生しました: {e}")
+        error_msg = f"メッセージ処理中にエラーが発生しました: {e}"
+        logger.error(error_msg)
+        logger.error(f"詳細なエラー情報: {traceback.format_exc()}")
+        
         return {
             "success": False,
-            "error": f"メッセージ処理中にエラーが発生しました: {str(e)}",
+            "error": error_msg,
             "model": get_current_model()
         }
 

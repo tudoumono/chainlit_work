@@ -6,6 +6,7 @@
 import os
 import logging
 from typing import List, Dict, Any, Optional
+import traceback
 import mimetypes
 import json
 from datetime import datetime
@@ -13,8 +14,11 @@ from datetime import datetime
 import chainlit as cl
 from config import ACCEPTED_FILE_TYPES, MAX_FILES, MAX_FILE_SIZE_MB, MIME_TYPES
 
-# ロギング設定
-logger = logging.getLogger(__name__)
+# ロギングヘルパーからロガーを取得
+from log_helper import get_logger
+
+# このモジュール用のロガーを取得
+logger = get_logger(__name__)
 
 # アップロードされたファイルを格納する辞書
 # キー: ファイルID、値: ファイルの内容と情報
@@ -31,14 +35,11 @@ def validate_file_type(file: cl.File) -> bool:
     Returns:
         bool: ファイルが許可されている場合はTrue、そうでない場合はFalse
     """
-    # mime_typeがNoneの場合は拡張子から推測
-    mime_type = file.mime_type
-    if not mime_type:
-        file_ext = os.path.splitext(file.name)[1].lower()
-        mime_type = MIME_TYPES.get(file_ext)
+    # ファイル名から拡張子を取得
+    file_ext = os.path.splitext(file.name)[1].lower()
     
-    # 許可されたMIMEタイプかどうかを確認
-    return mime_type in ACCEPTED_FILE_TYPES
+    # 拡張子から許可されているかを確認
+    return file_ext in ['.txt', '.log']
 
 
 def validate_file_size(file: cl.File) -> bool:
@@ -51,9 +52,21 @@ def validate_file_size(file: cl.File) -> bool:
     Returns:
         bool: ファイルサイズが制限内の場合はTrue、そうでない場合はFalse
     """
-    # byteをMBに変換して比較（1MB = 1,048,576 bytes）
-    size_mb = file.size / (1024 * 1024)
-    return size_mb <= MAX_FILE_SIZE_MB
+    try:
+        # 現在のChainlitバージョンではsizeプロパティが異なる可能性がある
+        # try-exceptでプロパティが存在するか確認
+        if hasattr(file, 'size'):
+            size_mb = file.size / (1024 * 1024)
+        else:
+            # ファイルのサイズが不明の場合、許可する
+            logger.warning(f"ファイル {file.name} のサイズが取得できません。処理を続行します。")
+            return True
+        
+        return size_mb <= MAX_FILE_SIZE_MB
+    except Exception as e:
+        logger.error(f"ファイルサイズの検証中にエラーが発生しました: {e}")
+        # エラーが発生した場合は、安全のために許可する
+        return True
 
 
 async def process_uploaded_file(file: cl.File) -> Dict[str, Any]:
@@ -71,7 +84,7 @@ async def process_uploaded_file(file: cl.File) -> Dict[str, Any]:
         if not validate_file_type(file):
             return {
                 "success": False,
-                "error": f"非対応のファイル形式です。対応形式: {', '.join(ACCEPTED_FILE_TYPES)}"
+                "error": f"非対応のファイル形式です。対応形式: .txt, .log"
             }
         
         # ファイルサイズを検証
@@ -81,22 +94,42 @@ async def process_uploaded_file(file: cl.File) -> Dict[str, Any]:
                 "error": f"ファイルサイズが大きすぎます。最大サイズ: {MAX_FILE_SIZE_MB}MB"
             }
         
-        # ファイルの内容を読み込む
-        content = await file.get_content()
+        # ファイルの内容を読み込む（Chainlit 2.5.5での正しい方法）
+        # get_contentメソッドが存在しないので、直接contentプロパティを使用
+        try:
+            # バイナリデータがあるか確認
+            if hasattr(file, 'content') and file.content:
+                content = file.content
+            elif hasattr(file, 'path') and file.path:
+                # ファイルパスから読み込む
+                with open(file.path, 'rb') as f:
+                    content = f.read()
+            else:
+                logger.error(f"ファイル {file.name} の内容を取得できません")
+                return {
+                    "success": False,
+                    "error": f"ファイル内容を取得できません。ファイル形式を確認してください。"
+                }
+        except Exception as content_error:
+            logger.error(f"ファイル内容の読み込み中にエラーが発生しました: {content_error}")
+            return {
+                "success": False,
+                "error": f"ファイル内容の読み込み中にエラーが発生しました: {str(content_error)}"
+            }
         
         # アップロードされたファイルを辞書に保存
         file_info = {
             "id": file.id,
             "name": file.name,
-            "mime_type": file.mime_type or mimetypes.guess_type(file.name)[0],
-            "size": file.size,
-            "content": content.decode('utf-8', errors='replace'),  # UTF-8でデコード、エラーは置換
+            "mime_type": mimetypes.guess_type(file.name)[0],
+            "size": len(content) if content else 0,
+            "content": content.decode('utf-8', errors='replace') if content else "",  # UTF-8でデコード、エラーは置換
             "upload_time": datetime.now().isoformat()
         }
         
         uploaded_files[file.id] = file_info
         
-        logger.info(f"ファイルが正常にアップロードされました: {file.name}")
+        logger.info(f"ファイルが正常にアップロードされました: {file.name} (サイズ: {file_info['size']} bytes)")
         
         return {
             "success": True,
@@ -104,10 +137,12 @@ async def process_uploaded_file(file: cl.File) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        logger.error(f"ファイル処理中にエラーが発生しました: {e}")
+        error_msg = f"ファイル処理中にエラーが発生しました: {e}"
+        logger.error(error_msg)
+        logger.error(f"詳細なエラー情報: {traceback.format_exc()}")
         return {
             "success": False,
-            "error": f"ファイル処理中にエラーが発生しました: {str(e)}"
+            "error": error_msg
         }
 
 

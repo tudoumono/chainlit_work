@@ -5,6 +5,7 @@
 
 import os
 import logging
+import traceback
 from typing import Dict, Any, Optional, List
 import json
 from datetime import datetime
@@ -14,8 +15,11 @@ from chainlit.types import ThreadDict
 
 from config import CHAT_HISTORY_DIR
 
-# ロギング設定
-logger = logging.getLogger(__name__)
+# ロギングヘルパーからロガーを取得
+from log_helper import get_logger
+
+# このモジュール用のロガーを取得
+logger = get_logger(__name__)
 
 
 def format_timestamp(timestamp: str) -> str:
@@ -160,3 +164,20 @@ def get_mime_type_for_extension(extension: str) -> Optional[str]:
         extension = '.' + extension
     
     return MIME_TYPES.get(extension.lower())
+
+
+def log_exception(e: Exception, prefix: str = "エラーが発生しました") -> str:
+    """
+    例外をログに記録し、エラーメッセージを返します。
+    
+    Args:
+        e (Exception): 発生した例外
+        prefix (str): エラーメッセージの接頭辞
+        
+    Returns:
+        str: フォーマットされたエラーメッセージ
+    """
+    error_msg = f"{prefix}: {str(e)}"
+    logger.error(error_msg)
+    logger.debug(f"スタックトレース: {traceback.format_exc()}")
+    return error_msg

@@ -1,9 +1,15 @@
+# ロギングヘルパーからロガーを取得
+from log_helper import get_logger
+
+# このモジュール用のロガーを取得
+logger = get_logger(__name__)
 """
 モデル関連のモジュール
 OpenAI APIとの通信や利用可能なモデルの管理を行います
 """
 
 import logging
+import traceback
 from typing import Dict, Any, List, Optional, AsyncGenerator
 
 from openai import AsyncOpenAI, AsyncStream
@@ -12,8 +18,7 @@ import chainlit as cl
 
 from config import OPENAI_API_KEY, OPENAI_ORGANIZATION_ID, DEFAULT_MODEL, MODELS
 
-# ロギング設定
-logger = logging.getLogger(__name__)
+
 
 # OpenAI APIクライアントの初期化
 client = AsyncOpenAI(
@@ -36,11 +41,17 @@ async def get_available_models() -> List[str]:
         models_list = await client.models.list()
         model_ids = [model.id for model in models_list.data]
         logger.info(f"利用可能なモデルを取得しました: {len(model_ids)} モデル")
+        logger.debug(f"利用可能なモデル一覧: {model_ids}")
         return model_ids
     except Exception as e:
-        logger.error(f"モデルの取得中にエラーが発生しました: {e}")
+        error_msg = f"モデルの取得中にエラーが発生しました: {e}"
+        logger.error(error_msg)
+        logger.error(f"詳細なエラー情報: {traceback.format_exc()}")
+        
         # エラーが発生した場合は、設定ファイルで定義されたモデルリストを返す
-        return [model[1] for model in MODELS]
+        fallback_models = [model[1] for model in MODELS]
+        logger.info(f"フォールバック: 設定済みモデルリストを使用します: {fallback_models}")
+        return fallback_models
 
 
 def get_model_details(model_id: str) -> Dict[str, Any]:
@@ -84,9 +95,15 @@ async def check_model_availability(model_id: str) -> bool:
         available_models = await get_available_models()
         return model_id in available_models
     except Exception as e:
-        logger.error(f"モデル利用可能性の確認中にエラーが発生しました: {e}")
+        error_msg = f"モデル利用可能性の確認中にエラーが発生しました: {e}"
+        logger.error(error_msg)
+        logger.error(f"詳細なエラー情報: {traceback.format_exc()}")
+        
         # エラーが発生した場合は、設定されたモデルとして扱う
-        return model_id in [model[1] for model in MODELS]
+        models_in_config = [model[1] for model in MODELS]
+        is_available = model_id in models_in_config
+        logger.info(f"フォールバック: モデル {model_id} は設定ファイル内に{'' if is_available else '不'}存在します")
+        return is_available
 
 
 async def set_current_model(model_id: str) -> Dict[str, Any]:
@@ -164,9 +181,12 @@ async def chat_completion(
             )
             return response
     except Exception as e:
-        logger.error(f"チャット応答の生成中にエラーが発生しました: {e}")
+        error_msg = f"チャット応答の生成中にエラーが発生しました: {e}"
+        logger.error(error_msg)
+        logger.error(f"詳細なエラー情報: {traceback.format_exc()}")
+        
         # エラーメッセージを表示用に返す
         return {
             "error": True,
-            "message": f"エラーが発生しました: {str(e)}"
+            "message": error_msg
         }

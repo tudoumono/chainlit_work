@@ -12,12 +12,11 @@ from dotenv import load_dotenv
 # .envファイルから環境変数を読み込む
 load_dotenv()
 
-# ロギング設定
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# ロギングヘルパーからロガーを取得
+from log_helper import get_logger
+
+# このモジュール用のロガーを取得
+logger = get_logger(__name__)
 
 # APIキーを環境変数から取得
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
