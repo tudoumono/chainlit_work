@@ -13,6 +13,7 @@ import json
 import tempfile
 import traceback
 import time
+import asyncio
 import pandas as pd
 import chainlit as cl
 from pathlib import Path
@@ -21,36 +22,6 @@ from typing import Dict, List, Any, Optional, Union
 # アップロードされたファイルの保存ディレクトリ
 UPLOADS_DIR = os.getenv("UPLOADS_DIR", os.path.join(os.getenv("EXE_DIR", os.getcwd()), "uploads"))
 
-# ファイル処理関数
-def process_file(file) -> Dict[str, Any]:
-    """アップロードされたファイルを処理し、内容を読み取る"""
-    try:
-        # ログ出力を追加して問題を特定しやすくする
-        print(f"処理開始: {file.name}, パス: {file.path}")
-        
-        # ファイルの拡張子を取得
-        file_extension = os.path.splitext(file.name)[1].lower()
-        
-        # 拡張子による明示的な分類（MIMEに依存しない）
-        if file_extension in ['.csv']:
-            return process_csv(file)
-        elif file_extension in ['.xlsx', '.xls']:
-            return process_excel(file)
-        elif file_extension in ['.txt', '.md', '.py', '.js', '.html', '.css']:
-            return process_text(file)
-        elif file_extension in ['.json']:
-            return process_json(file)
-        elif file_extension in ['.png', '.jpg', '.jpeg', '.gif', '.bmp']:
-            return {"type": "image", "path": file.path, "name": file.name}
-        elif file_extension in ['.pdf']:
-            return {"type": "pdf", "path": file.path, "name": file.name}
-        else:
-            print(f"未対応のファイル形式: {file_extension}")
-            return {"type": "unknown", "message": f"未対応のファイル形式: {file_extension}", "name": file.name}
-    except Exception as e:
-        print(f"ファイル処理中にエラーが発生: {str(e)}")
-        traceback.print_exc()  # スタックトレースを出力
-        return {"type": "error", "message": f"ファイル処理エラー: {str(e)}", "name": file.name}
 
 def process_csv(file) -> Dict[str, Any]:
     """CSVファイルを処理してデータフレームに変換"""
@@ -330,7 +301,6 @@ async def display_dataframe_details(df: pd.DataFrame, filename: str) -> None:
         traceback.print_exc()
         await cl.Message(content=f"エラー: データフレームの詳細表示中に問題が発生しました: {str(e)}").send()
 
-# ファイルアップロード処理
 async def handle_file_upload(files, upload_dir=UPLOADS_DIR) -> Dict[str, Dict[str, Any]]:
     """ファイルアップロードを処理する（改善版）"""
     if not files:
@@ -347,24 +317,19 @@ async def handle_file_upload(files, upload_dir=UPLOADS_DIR) -> Dict[str, Dict[st
     await processing_msg.send()
     
     try:
-        # 全ファイルをまず簡単に処理して表示する
+        # 全ファイルを処理
         for file in files:
             try:
-                # ファイルの基本情報だけを取得（軽量処理）
-                file_extension = os.path.splitext(file.name)[1].lower()
-                file_type = get_file_type(file_extension)
-                
-                # 基本情報をメッセージとして表示
+                # ファイルメッセージを表示
                 file_msg = cl.Message(content=f"ファイル {file.name} を処理中...")
                 await file_msg.send()
                 
-                # 最小限のファイル情報を生成
-                file_info = {
-                    "type": file_type,
-                    "path": file.path,
-                    "name": file.name,
-                    "timestamp": time.time()
-                }
+                # デバッグログ追加
+                print(f"DEBUG: ファイル処理開始: {file.name}, パス: {file.path}")
+                
+                # process_fileを呼び出して完全に処理
+                file_info = process_file(file)
+                print(f"DEBUG: process_file完了: {file.name}, 結果: {file_info['type'] if file_info and 'type' in file_info else 'unknown'}")
                 
                 # 辞書に情報を保存
                 processed_files[file.name] = file_info
@@ -385,20 +350,24 @@ async def handle_file_upload(files, upload_dir=UPLOADS_DIR) -> Dict[str, Dict[st
                         description="ファイルの詳細情報を表示します"
                     )
                 ]
-                file_msg.tooltip = f"ファイル: {file.name} - {file_type}型"  # ツールチップの追加
+                file_msg.tooltip = f"ファイル: {file.name} - {file_info['type']}型"
                 await file_msg.update()
                 
                 # ファイルタイプに応じたプレビュー表示
-                if file_type == "image":
+                if file_info["type"] == "image":
                     await cl.Message(
                         content=f"画像プレビュー: {file.name}",
                         elements=[cl.Image(name=file.name, path=file.path)],
                     ).send()
-                elif file_type == "pdf":
+                elif file_info["type"] == "pdf":
                     await cl.Message(
                         content=f"PDFプレビュー: {file.name}",
-                        elements=[cl.File(name=file.name, path=file.path, display="inline", mime="application/pdf")],
+                        elements=[cl.File(name=file.name, path=file.path, 
+                                         display="inline", mime="application/pdf")],
                     ).send()
+                
+                # 処理の安定性向上のため短い待機を入れる
+                await cl.sleep(0.5)
             
             except Exception as e:
                 # エラー処理の改善
@@ -408,17 +377,76 @@ async def handle_file_upload(files, upload_dir=UPLOADS_DIR) -> Dict[str, Dict[st
         
         # 処理完了メッセージの更新
         processing_msg.content = "✅ 全てのファイルの処理が完了しました"
-        processing_msg.tooltip = f"処理完了: {len(files)}ファイル"  # ツールチップの追加
+        processing_msg.tooltip = f"処理完了: {len(files)}ファイル"
         await processing_msg.update()
         
-        # ヘルプメッセージ
-        if processed_files:
-            await cl.Message(
-                content="ファイルについて質問してください。例：\n"
-                       "- このCSVの要約を教えて\n"
-                       "- データの傾向を分析して\n"
-                       "- この画像に何が写っている？",
-            ).send()
+        # # ヘルプメッセージ
+        # if processed_files:
+        #     await cl.Message(
+        #         content="ファイルについて質問してください。例：\n"
+        #                "- このCSVの要約を教えて\n"
+        #                "- データの傾向を分析して\n"
+        #                "- この画像に何が写っている？",
+        #     ).send()
+        
+        # ★追加部分: ファイル処理後、自動的に最初のファイルの分析を行う
+        if processed_files and len(processed_files) > 0:
+            first_file_name = list(processed_files.keys())[0]
+            
+            # ★重要な追加: 最初のファイルを自動的に分析
+            analysis_msg = cl.Message(content=f"ファイル「{first_file_name}」の分析結果:")
+            await analysis_msg.send()
+            
+            try:
+                # ファイル情報を取得して分析
+                file_info = processed_files[first_file_name]
+                
+                # ファイルタイプに応じた基本分析を実行
+                if file_info["type"] == "text" and "full_content" in file_info:
+                    content = file_info["full_content"]
+                    if len(content) > 1000:
+                        content_preview = content[:1000] + "...(省略)..."
+                    else:
+                        content_preview = content
+                    
+                    analysis_msg.content = (
+                        f"### ファイル「{first_file_name}」の基本分析\n\n"
+                        f"**タイプ**: テキストファイル\n"
+                        f"**行数**: {content.count('\\n') + 1}行\n"
+                        f"**文字数**: {len(content)}文字\n\n"
+                        f"**内容プレビュー**:\n```\n{content_preview}\n```\n\n"
+                        "より詳細な分析を行うには、質問を入力してください。"
+                    )
+                    await analysis_msg.update()
+                    
+                elif file_info["type"] in ["csv", "excel"] and "dataframe" in file_info:
+                    df = file_info["dataframe"]
+                    csv_preview = df.head(5).to_csv(index=False)
+                    
+                    analysis_msg.content = (
+                        f"### ファイル「{first_file_name}」の基本分析\n\n"
+                        f"**タイプ**: {file_info['type'].upper()}ファイル\n"
+                        f"**行数**: {len(df)}行\n"
+                        f"**列数**: {len(df.columns)}列\n"
+                        f"**列名**: {', '.join(df.columns)}\n\n"
+                        f"**データプレビュー**:\n```\n{csv_preview}\n```\n\n"
+                        "より詳細な分析を行うには、質問を入力してください。"
+                    )
+                    await analysis_msg.update()
+                    
+                else:
+                    analysis_msg.content = (
+                        f"### ファイル「{first_file_name}」の基本情報\n\n"
+                        f"**タイプ**: {file_info['type']}\n\n"
+                        "このファイルについて質問してください。"
+                    )
+                    await analysis_msg.update()
+                    
+            except Exception as e:
+                print(f"自動分析エラー: {str(e)}")
+                traceback.print_exc()
+                analysis_msg.content = f"ファイル「{first_file_name}」の分析中にエラーが発生しました: {str(e)}"
+                await analysis_msg.update()
         
     except Exception as e:
         error_msg = f"エラー: ファイル処理中に問題が発生しました: {str(e)}"
@@ -427,80 +455,153 @@ async def handle_file_upload(files, upload_dir=UPLOADS_DIR) -> Dict[str, Dict[st
     
     return processed_files
 
+# file_utils.py - get_file_type関数と関連処理
 def get_file_type(extension: str) -> str:
-    """ファイル拡張子からタイプを判断する簡易関数"""
-    if extension in ['.csv']:
-        return "csv"
-    elif extension in ['.xlsx', '.xls']:
-        return "excel"
-    elif extension in ['.txt', '.md', '.py', '.js', '.html', '.css']:
+    """ファイル拡張子からタイプを判断する改良関数"""
+    # 拡張子を小文字に変換して前のドットを削除
+    ext = extension.lower()
+    if not ext.startswith('.'):
+        ext = '.' + ext
+    
+    # ★ここが重要な修正★: より詳細な拡張子分類
+    # テキスト系
+    if ext in ['.txt', '.md', '.py', '.js', '.html', '.css']:
         return "text"
-    elif extension in ['.json']:
+    
+    # 構造化データ
+    elif ext == '.json':
         return "json"
-    elif extension in ['.png', '.jpg', '.jpeg', '.gif', '.bmp']:
+    
+    # 表形式データ
+    elif ext == '.csv':
+        return "csv"
+    elif ext in ['.xlsx', '.xls']:
+        return "excel"
+    
+    # メディア
+    elif ext in ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp']:
         return "image"
-    elif extension in ['.pdf']:
+    elif ext == '.pdf':
         return "pdf"
+    
+    # 未知の形式
     else:
+        # MIMEタイプから推測を試みる
+        try:
+            import mimetypes
+            mime_type = mimetypes.guess_type('dummy' + ext)[0]
+            if mime_type:
+                if mime_type.startswith('text/'):
+                    return "text"
+                elif mime_type.startswith('image/'):
+                    return "image"
+                elif 'pdf' in mime_type:
+                    return "pdf"
+                elif 'json' in mime_type:
+                    return "json"
+                elif 'csv' in mime_type or 'comma-separated' in mime_type:
+                    return "csv"
+                elif 'excel' in mime_type or 'spreadsheet' in mime_type:
+                    return "excel"
+        except:
+            pass
+        
+        # 推測できない場合はunknown
         return "unknown"
 
-def get_file_reference_content(message_content: str, files: Dict[str, Dict[str, Any]]) -> str:
-    """メッセージ内のファイル参照を検出し、関連コンテンツを追加"""
+# process_file関数の改善
+def process_file(file) -> Dict[str, Any]:
+    """アップロードされたファイルを処理し、内容を読み取る（改善版）"""
     try:
-        # ファイル名が特定のパターンで含まれているか確認 (例: 「ファイル名.csv について教えて」)
-        file_references = []
-        for file_name in files.keys():
-            if file_name.lower() in message_content.lower():
-                file_references.append(file_name)
+        # ログ出力を追加して問題を特定しやすくする
+        print(f"処理開始: {file.name}, パス: {file.path}")
         
-        # ファイル参照があれば、そのファイル情報をメッセージに追加
-        if file_references and not "```" in message_content:  # コードブロックがなければ
-            for file_name in file_references:
-                file_info = files[file_name]
-                
-                # ファイルタイプによって追加する内容を変える
-                if file_info["type"] in ["csv", "excel"]:
-                    # データフレームがまだ読み込まれていなければ読み込む
-                    if "dataframe" not in file_info:
-                        try:
-                            if file_info["type"] == "csv":
-                                file_info["dataframe"] = pd.read_csv(file_info["path"])
-                            else:  # excel
-                                file_info["dataframe"] = pd.read_excel(file_info["path"])
-                        except Exception as e:
-                            print(f"ファイル読み込みエラー: {str(e)}")
-                            continue
-                    
-                    # データフレームを文字列に変換してプロンプトに追加
-                    df = file_info["dataframe"]
-                    csv_str = df.head(20).to_csv(index=False)
-                    message_content += f"\n\n{file_name}の内容（最初の20行）:\n```\n{csv_str}\n```"
-                
-                elif file_info["type"] == "text" and "full_content" in file_info and len(file_info["full_content"]) < 10000:
-                    # テキストファイルの内容をプロンプトに追加（短い場合のみ）
-                    message_content += f"\n\n{file_name}の内容:\n```\n{file_info['full_content']}\n```"
-                
-                elif file_info["type"] == "json" and "content" in file_info:
-                    # JSONデータを文字列に変換してプロンプトに追加
-                    json_str = json.dumps(file_info["content"], indent=2, ensure_ascii=False)
-                    if len(json_str) < 10000:
-                        message_content += f"\n\n{file_name}の内容:\n```json\n{json_str}\n```"
-                    else:
-                        message_content += f"\n\n{file_name}はJSONファイルですが、サイズが大きすぎるため全文は含めていません。"
-                
-                elif file_info["type"] == "image":
-                    # 画像ファイルの参照情報を追加
-                    message_content += f"\n\n{file_name}は画像ファイルです。"
-                
-                elif file_info["type"] == "pdf":
-                    # PDFファイルの参照情報を追加
-                    message_content += f"\n\n{file_name}はPDFファイルです。"
+        # ファイルの拡張子とMIMEタイプを取得
+        file_extension = os.path.splitext(file.name)[1].lower()
+        mime_type = getattr(file, 'mime', None)
+        
+        print(f"MIME: {mime_type}, 拡張子: {file_extension}")
+        
+        # ★ここが重要な修正★: 拡張子による明示的な分類（MIMEに依存しない）
+        file_type = get_file_type(file_extension)
+        
+        # MIMEタイプが拡張子と矛盾する場合は修正
+        if mime_type == 'application/octet-stream' and file_type != 'unknown':
+            # MIMEタイプが未知でも拡張子から判断できる場合
+            print(f"MIMEタイプが不明ですが、拡張子から{file_type}と判断します")
+        elif mime_type and 'text' in mime_type and file_extension == '.md':
+            # Markdownファイルの特別処理
+            file_type = 'text'
+            print(f"Markdownファイルを{file_type}として処理します")
+        
+        # ファイル種類に応じた処理
+        if file_type == "csv":
+            return process_csv(file)
+        elif file_type == "excel":
+            return process_excel(file)
+        elif file_type == "text":
+            return process_text(file)
+        elif file_type == "json":
+            return process_json(file)
+        elif file_type == "image":
+            return {"type": "image", "path": file.path, "name": file.name}
+        elif file_type == "pdf":
+            return {"type": "pdf", "path": file.path, "name": file.name}
+        else:
+            print(f"未対応のファイル形式: {file_extension} (MIME: {mime_type})")
+            return {"type": "unknown", "message": f"未対応のファイル形式: {file_extension}", "name": file.name}
+    except Exception as e:
+        print(f"ファイル処理中にエラーが発生: {str(e)}")
+        traceback.print_exc()
+        return {"type": "error", "message": f"ファイル処理エラー: {str(e)}", "name": file.name}
+
+# file_utils.py - get_file_reference_content関数
+def get_file_reference_content(message_content: str, files: Dict[str, Dict[str, Any]]) -> str:
+    """メッセージ内のファイル参照を検出し、関連コンテンツを追加（完全再構築版）"""
+    try:
+        if not files or not message_content:
+            return message_content
+        
+        # デバッグログ
+        print(f"ファイル参照検索: メッセージ[{message_content}]")
+        print(f"利用可能ファイル: {list(files.keys())}")
+        
+        # ファイルを自動的に追加するようにする
+        # メッセージの内容に関わらず、直近でアップロードされたファイルの内容を添付
+        # これにより、ユーザーが明示的にファイル名を参照しなくても内容が反映される
+        recent_files = sorted(files.items(), key=lambda x: x[1].get('timestamp', 0), reverse=True)
+        
+        if recent_files and "```" not in message_content:
+            # 最新のファイルを取得
+            file_name, file_info = recent_files[0]
+            
+            # メッセージの先頭に「最近アップロードされたファイル情報を考慮してください」と追加
+            message_content = f"以下の最近アップロードされたファイル {file_name} を参照してください:\n\n" + message_content
+            
+            # ファイルの内容に基づいて適切な情報を追加
+            if file_info["type"] in ["csv", "excel"] and "dataframe" in file_info:
+                df = file_info["dataframe"]
+                csv_str = df.head(10).to_csv(index=False)
+                message_content += f"\n\n{file_name}の内容（最初の10行）:\n```\n{csv_str}\n```"
+            
+            elif file_info["type"] == "text" and "full_content" in file_info:
+                content = file_info["full_content"]
+                if len(content) > 2000:
+                    content = content[:2000] + "...(省略)..."
+                message_content += f"\n\n{file_name}の内容:\n```\n{content}\n```"
+            
+            elif file_info["type"] == "json" and "content" in file_info:
+                json_str = json.dumps(file_info["content"], indent=2, ensure_ascii=False)
+                if len(json_str) > 2000:
+                    json_str = json_str[:2000] + "...(省略)..."
+                message_content += f"\n\n{file_name}の内容:\n```json\n{json_str}\n```"
+            
+            print(f"ファイル内容を追加しました: {file_name}")
         
         return message_content
     except Exception as e:
         print(f"ファイル参照処理エラー: {str(e)}")
         traceback.print_exc()
-        # エラーが発生しても元のメッセージは返す
         return message_content
 
 # 詳細な処理のためのユーティリティ関数（エラーハンドリングのサポート）

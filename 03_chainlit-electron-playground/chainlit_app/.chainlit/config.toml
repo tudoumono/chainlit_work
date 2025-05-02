@@ -36,7 +36,7 @@ edit_message = true
 
 # Authorize users to spontaneously upload files with messages
 [features.spontaneous_file_upload]
-enabled = true
+enabled = false
 accept = ["*/*"]  # すべてのファイルタイプを受け入れる
 max_files = 10
 max_size_mb = 20

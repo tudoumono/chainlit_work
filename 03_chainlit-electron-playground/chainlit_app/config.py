@@ -78,13 +78,24 @@ def get_prefix(debug_mode=False):
     return "🛠️【デバッグモード】\n" if debug_mode else ""
 
 def validate_api_key(api_key):
-    """APIキーの形式を検証する"""
+    """APIキーの形式を検証する（改良版）"""
     if not api_key:
         return False
     
-    # OpenAI APIキーのパターン（sk-で始まる文字列）
-    pattern = r'^sk-[a-zA-Z0-9]{20,}'
-    return bool(re.match(pattern, api_key))
+    # OpenAI APIキーのパターン（各種キー形式に対応）
+    patterns = [
+        r'^sk-[a-zA-Z0-9]{20,}',          # 標準キー
+        r'^sk-proj-[a-zA-Z0-9]{20,}',      # プロジェクトキー
+        r'^sk-ant-[a-zA-Z0-9]{20,}',       # Anthropicフォーマット
+        r'^sk-org-[a-zA-Z0-9]{20,}'        # 組織キー
+    ]
+    
+    # いずれかのパターンに一致すればOK
+    for pattern in patterns:
+        if re.match(pattern, api_key):
+            return True
+    
+    return False
 
 def sanitize_input(text):
     """ユーザー入力をサニタイズする"""

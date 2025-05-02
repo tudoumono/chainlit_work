@@ -414,21 +414,22 @@ async def retry_action(action):
         await handle_error(e, "再試行処理中")
 
 # メインのメッセージハンドラ
+# main.py - on_message関数の修正
 @cl.on_message
-async def on_message(msg: cl.Message, resume: bool = False):
-    """メインのメッセージハンドラ"""
+async def on_message(msg: cl.Message):
+    """メインのメッセージハンドラ（改善版）"""
     try:
         # 事前状態のリセットと履歴処理
         cl.user_session.set("cancel_flag", False)
         history = cl.user_session.get("chat_history", [])
         
-        if not resume:
-            # メッセージをサニタイズ（セキュリティ対策）
-            sanitized_content = config.sanitize_input(msg.content)
-            
-            # 履歴にユーザーメッセージを追加
-            history.append({"role": "user", "content": sanitized_content})
-            cl.user_session.set("last_user_msg", sanitized_content)
+        # メッセージをサニタイズ（セキュリティ対策）
+        sanitized_content = config.sanitize_input(msg.content)
+        
+        # 履歴にユーザーメッセージを追加
+        history.append({"role": "user", "content": sanitized_content})
+        cl.user_session.set("last_user_msg", sanitized_content)
+        cl.user_session.set("chat_history", history)  # 重要: ここで履歴を保存
 
         # モデル情報の取得
         model = cl.user_session.get("selected_model", "gpt-4o")
@@ -440,81 +441,86 @@ async def on_message(msg: cl.Message, resume: bool = False):
         try:
             # ファイル参照がないかチェック
             files = cl.user_session.get("files", {})
-            message_content = msg.content
+            message_content = sanitized_content
             
             # ファイル参照がある場合、関連コンテンツを追加
             message_content = file_utils.get_file_reference_content(message_content, files)
             
-            # OpenAI API呼び出し - 並列処理
-            tasks = []
+            # ★重要な修正: APIキーチェック
+            if not settings["API_KEY_VALID"]:
+                stream_msg.content = "**OpenAI APIキーが設定されていないか無効です。** .envファイルを確認してください。"
+                await stream_msg.update()
+                return  # 早期リターンで処理を終了
             
-            # 主タスク: OpenAI API呼び出し
-            api_task = models_utils.ask_openai(
-                client, 
-                message_content, 
-                history, 
-                model, 
-                debug_mode=settings["DEBUG_MODE"]
-            )
-            
-            # API呼び出しのみを待機
-            stream = await api_task
+            # ★重要な修正: タイムアウト付きAPI呼び出し
+            try:
+                # OpenAI API呼び出し処理のタイムアウト設定
+                api_task = asyncio.create_task(models_utils.ask_openai(
+                    client, 
+                    message_content, 
+                    history, 
+                    model, 
+                    debug_mode=settings["DEBUG_MODE"]
+                ))
+                
+                # 30秒のタイムアウトを設定
+                stream = await asyncio.wait_for(api_task, timeout=30.0)
+            except asyncio.TimeoutError:
+                stream_msg.content = "APIリクエストがタイムアウトしました。もう一度試すか、設定を確認してください。"
+                await stream_msg.update()
+                return  # 早期リターンで処理を終了
             
             # 応答を構築
             assistant_text = ""
-            token_count = 0
-            start_time = time.time()
-
-            async for chunk in stream:
-                # キャンセルフラグをチェック
-                if cl.user_session.get("cancel_flag", False):
-                    # ストリームを正しく閉じる
-                    await stream.aclose()
-                    
-                    # 部分的な応答を保存
-                    cl.user_session.set("partial_response", assistant_text)
-                    break
-                
-                # チャンク内容の取得と追加
-                content = chunk.choices[0].delta.content
-                if content:
-                    assistant_text += content
-                    token_count += 1  # 概算
-                    stream_msg.content = assistant_text
-                    await stream_msg.update()
-
-            # 応答完了時の処理
-            total_time = round((time.time() - start_time) * 1000)
             
-            if not cl.user_session.get("cancel_flag", False):
+            # ★重要な修正: 明示的に処理完了を示す変数
+            processing_completed = False
+            
+            try:
+                async for chunk in stream:
+                    # キャンセルフラグをチェック
+                    if cl.user_session.get("cancel_flag", False):
+                        await stream.aclose()
+                        cl.user_session.set("partial_response", assistant_text)
+                        break
+                    
+                    # チャンク内容の取得と追加
+                    content = chunk.choices[0].delta.content
+                    if content:
+                        assistant_text += content
+                        stream_msg.content = assistant_text
+                        await stream_msg.update()
+                
+                # 明示的に処理完了を設定
+                processing_completed = True
+            
+            except Exception as e:
+                stream_msg.content = f"エラーが発生しました: {str(e)}"
+                await stream_msg.update()
+                print(f"ストリーム処理エラー: {str(e)}")
+                traceback.print_exc()
+            
+            # 処理が完了したらのみ履歴に追加
+            if processing_completed and not cl.user_session.get("cancel_flag", False):
                 # 履歴に応答を追加
                 history.append({"role": "assistant", "content": assistant_text})
                 cl.user_session.set("chat_history", history)
-                
-                # 部分的な応答をクリア
                 cl.user_session.set("partial_response", "")
                 
-                # 自動保存
-                history_utils.save_chat_history_txt(
-                    history, 
-                    settings["CHAT_LOG_DIR"], 
-                    settings["SESSION_ID"]
-                )
-                
-                # 完了メッセージとアクション
-                await ui_actions.show_action_buttons(
-                    message=f"応答完了（{token_count}トークン、{total_time}ms）"
-                )
-
+                # 明示的に処理完了メッセージを表示
+                await cl.Message(content="✅ 応答が完了しました").send()
+            
         except Exception as e:
-            await handle_error(e, "OpenAI API呼び出し中")
+            error_message = f"エラーが発生しました: {str(e)}"
+            stream_msg.content = error_message
+            await stream_msg.update()
+            print(f"処理エラー: {error_message}")
+            traceback.print_exc()
 
     except Exception as e:
-        await handle_error(e, "メッセージ処理中")
-    
-    finally:
-        # 最終的に状態を保存
-        cl.user_session.set("chat_history", history)
+        print(f"全体エラー: {str(e)}")
+        traceback.print_exc()
+        await cl.Message(content=f"エラーが発生しました: {str(e)}").send()
 
 # ────────────────────────────────────────────────────────────────
 # 📚 参考リンク
