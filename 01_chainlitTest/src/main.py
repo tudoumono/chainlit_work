@@ -2,7 +2,6 @@
 
 # 標準ライブラリ
 import os
-import pathlib
 import asyncio
 
 # ディストリビューションライブラリ
@@ -10,8 +9,8 @@ from openai import AsyncOpenAI
 from dotenv import load_dotenv
 
 # Chainlitのライブラリ
-import chainlit as cl   #メインのライブラリ
-from chainlit.input_widget import Select, Switch, Slider  #ウジェット
+import chainlit as cl   # メインのライブラリ
+from chainlit.input_widget import Select, Switch, Slider  # ウィジェット
 
 # 自作ライブラリのインポート
 
@@ -30,12 +29,12 @@ def openai_init_client(api_key:str):
         raise RuntimeError(f"OpenAIクライアントの初期化に失敗しました: {str(e)}") from e
 
 # asyncで非同期関数でメッセージの送信
-async def generate_text(client: AsyncOpenAI, prompt: str, model: str):
+async def generate_text(client: AsyncOpenAI, message_history: list, model: str):
+    # システムプロンプトを先頭に追加
     "非同期でOpenAIにリクエストを送信する"
     response = await client.responses.create(
         model=model,
-        input=prompt,
-        store=True,  # 会話履歴をサーバー側で管理
+        input=message_history,#過去のやりとりも合わせて送るためリスト形式でユーザメッセージを格納して送る。
         stream=True #ストリーミング設定ON
     )
     return response
@@ -51,8 +50,8 @@ client:AsyncOpenAI = openai_init_client(OPENAI_API_KEY)
 # チャット起動時
 @cl.on_chat_start
 async def start():
-        # 設定のウィジェットを追加
-        settings =await cl.ChatSettings(
+    # 設定のウィジェットを追加
+    settings =await cl.ChatSettings(
         [
             Select(#モデルの選択
                 id="Model",
@@ -62,13 +61,15 @@ async def start():
             ),
         ]
     ).send()
-        # ユーザーセッションを設定
-        # ユーザの入力を保存するhistoryを作成
-        cl.user_session.set(
+    
+    # ユーザーセッションを設定
+    # ユーザの入力を保存するhistoryを作成
+    cl.user_session.set(
         "message_history",
-        [{"role": "system", "content": "You are a helpful assistant."}],
-        )
-        cl.user_session.set("model", settings["Model"])    # モデルの設定
+        [{"role": "system", "content": "You are a helpful assistant."}]
+    )
+    # モデルの設定
+    cl.user_session.set("model", settings["Model"])
 
 # 設定が更新されたら実行される。
 @cl.on_settings_update
@@ -98,15 +99,22 @@ async def on_message(message: cl.Message):
     full_response = ""
 
     # メッセージ送信の関数呼び出し
-    stream_response = await generate_text(client,message.content,model)
+    stream_response = await generate_text(client,message_history,model)
 
     # ストリームの各チャンクを処理
     async for chunk in stream_response:
-        # イベント構造に基づいてテキストを抽出
-        if hasattr(chunk, 'delta') and hasattr(chunk.delta, 'text') and chunk.delta.text:
-            content = chunk.delta.text
-            full_response += content
-            await msg.stream_token(content)
+        # ResponseTextDeltaEventのイベント処理
+        if hasattr(chunk, 'type') and chunk.type == 'response.output_text.delta':
+            # delta属性に直接アクセス
+            if hasattr(chunk, 'delta') and chunk.delta:
+                content = chunk.delta
+                full_response += content
+                await msg.stream_token(content)
+        
+        # デバッグ情報（問題がある場合）
+        if hasattr(chunk, '__dict__'):
+            print(f"イベントタイプ: {getattr(chunk, 'type', 'タイプなし')}")
+            print(f"イベント属性: {chunk.__dict__}")
 
     # 完全なレスポンスをメッセージ履歴に追加
     message_history.append({"role": "assistant", "content": full_response})
