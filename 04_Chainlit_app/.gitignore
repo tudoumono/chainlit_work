@@ -1,13 +1,12 @@
+# 環境変数
 .env
-
 
 # チャット履歴
 chat_history/**
 !chat_history/.gitkeep
 
-
-
-
 # 実行履歴
 logs/**
 !logs/.gitkeep
+
+src
