@@ -2,20 +2,13 @@
 # Python開発者のための OpenAI Responses API チュートリアル
 
 ## はじめに
-OpenAI が提供する **Responses API (`client.responses.create`)** は、チャット生成・ドキュメント検索・Web 検索・マルチモーダル入出力などを **単一のエンドポイント** で呼び出せる統合 API です。  
-本チュートリアルでは **Python 開発経験はあるが OpenAI API は初学者** という読者を想定し、ローカルの *.py* ファイルで動かせるステップバイステップ形式で以下を学びます。
 
-| ステップ | 学習内容 | 体験できる機能 |
-|---------|---------|---------------|
-| 1 | 基本的なチャット応答 | システム/ユーザーメッセージ・ストリーミング |
-| 2 | ベクトルストアによるファイル検索 | 社内 FAQ や PDF から回答生成 |
-| 3 | Web 検索ツール | 最新ニュースやリアルタイム情報取得 |
-| 4 | 画像の理解・生成 | 画像解析（入力）・DALL·E 生成（出力） |
-| 5 | Thread (会話スレッド) | 文脈を維持したマルチターン対話 |
+OpenAI が提供する **Responses API (`client.responses.create`)** は、チャット生成・ドキュメント検索・Web 検索・マルチモーダル入出力などを **単一のエンドポイント** で呼び出せる統合 API です。  
 
 ---
 
 ## 前提
+
 ```bash
 pip install --upgrade openai
 pip install --upgrade load_dotenv
@@ -28,6 +21,7 @@ echo 'OPENAI_API_KEY="sk-proj-your-APIkey"' >> .env
 ## 1. Responses API の基礎
 
 ### 1‑1. 単発呼び出し
+
 ```python
 import os
 from openai import OpenAI
@@ -97,7 +91,7 @@ for event in stream:
 | :--------- | :----------------- | :----------------------- |
 | ファイル単体で使う  | ```tools=[{"type": "file_search","file_ids": [file_id]}]```| 小規模・一時的な検索や、少数ファイル対象時    |
 
-### ①単一ファイル
+### 2‑1. 単一ファイル
 ```python
 import os
 from openai import OpenAI
@@ -121,7 +115,7 @@ file_id = uploaded_file.id
 
 query = "このマニュアルのバージョン履歴について教えて"
 
-response = openai.responses.create(
+response = client.responses.create(
     model="gpt-4o",
     input=query,
     tools=[
@@ -135,7 +129,7 @@ response = openai.responses.create(
 print(response.output_text)
 ```
 
-### ①複数ファイル
+### 2‑2. 複数ファイル
 
 ```python
 import os
@@ -150,20 +144,20 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 # ファイル1をアップロード
-file1 = openai.files.create(
+file1 = client.files.create(
     file=open("doc1.pdf", "rb"),
     purpose="file_search"
 )
 
 # ファイル2をアップロード
-file2 = openai.files.create(
+file2 = client.files.create(
     file=open("doc2.pdf", "rb"),
     purpose="file_search"
 )
 
 query = "これらの文書に出てくるセキュリティポリシーについてまとめてください。"
 
-response = openai.responses.create(
+response = client.responses.create(
     model="gpt-4o",
     input=query,
     tools=[
@@ -180,7 +174,7 @@ print(response.output_text)
 
 ---
 
-## 2. ベクトルストアでファイル検索
+## 3. ベクトルストアでファイル検索
 
 | 方法         | 使用するパラメータ          | いつ使う？                    |
 | :--------- | :----------------- | :----------------------- |
@@ -245,7 +239,6 @@ print(response.output_text)
 | `"vision"`     | **画像解析用途のファイル**（一部プレビュー機能専用。通常は使用しない）                         |
 | `"batch"`      | **バッチリクエスト用**（大量一括処理タスク用。現在は限定公開）                             |
 
-
 つまり、
 - Responses API/Assistants API → "assistants"
 - モデルのファインチューニング → "fine-tune"
@@ -258,6 +251,7 @@ print(response.output_text)
 これが運用判断の基本になります！
 
 #　ベクトルストアの仕様
+
 | 質問         | 結論                                |
 | :--------- | :-------------------------------- |
 | ① 誰が使える？   | 同じOrganization/Project内のAPIユーザーのみ |
@@ -267,7 +261,8 @@ print(response.output_text)
 
 ---
 
-## 3. Web 検索ツール
+## 4. Web 検索ツール
+
 ```python
 import os
 from openai import OpenAI
@@ -308,9 +303,9 @@ inputの中にベクトルストアの内容を貼り付けたら当然外部検
 
 ---
 
-## 4. 画像を扱う
+## 5. 画像を扱う
 
-### 4‑1. 画像理解
+### 5‑1. 画像理解
 #### ①image_urlを使用する方法
 ```python
 import os
@@ -373,7 +368,8 @@ print(image_url)
 # （1024x1024も指定できますが生成に時間がかかる場合があります
 ```
 
-### 4‑2. 画像生成
+### 5‑2. 画像生成
+
 ```python
 import os
 from openai import OpenAI
@@ -386,27 +382,16 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # OpenAI APIキーの設定
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-# ファイルをアップロード
-uploaded_file = client.files.create(file=open("my_photo.jpg", "rb"), purpose="vision")
-file_id = uploaded_file.id
-print(file_id)
-
-# メッセージに画像を含める。
-question = "この画像の建物は何ですか？"
-messages = [
-    {"role": "user", "content": question},
-    {"role": "user", "content": [
-        {"type": "input_image", "file_id": file_id}
-    ]}
-]
-
-# メッセージ送信
-response = client.responses.create(
-    model="gpt-4o",  # GPT-4oは画像入力に対応
-    input=messages
+response = client.Image.create(
+    prompt="柴犬が宇宙服を着て月面を歩いているイラスト",
+    n=1,#生成枚数
+    size="512x512"
 )
-print(response.output_text)
+# 生成された画像のURLを取り出す
+image_url = response["data"][0]["url"]
+print(image_url)
 ```
+
 - 現時点では、Responses APIが直接画像バイナリを返すことはできません。
 しかし、モデルに「画像生成ツール」を組み込むことでテキスト経由で画像生成を指示することも将来的には可能になるかもしれません。
 現状では別途Image APIを呼び出すアプローチが確実です。
@@ -420,7 +405,7 @@ print(response.output_text)
 
 ---
 
-## 5. Thread で会話を継続
+## 6. Thread で会話を継続
 
 ```python
 import os
@@ -463,9 +448,9 @@ print("A2:", response2.output_text)
 
 ---
 
-## 6. モデルのファインチューニング(カスタムモデル作成)
+## 7. モデルのファインチューニング (カスタムモデル作成) 
 
-#### 6.1 データ準備とJSONL形式
+#### 7.1 データ準備とJSONL形式
 
 - チャット形式のデータ: GPT-3.5-turboやGPT-4のようなチャットモデルをファインチューニングする場合、各サンプルはメッセージのリストで構成されます。具体的には、次のようなフォーマットです
 
@@ -491,7 +476,7 @@ print("A2:", response2.output_text)
 - 変換と確認: 既存のFAQ集や対話ログから上記形式に変換するスクリプトを用意すると良いでしょう。変換後、OpenAIの提供するデータ検証スクリプトでフォーマットを確認することもできます
 - データ数は最低でも10行以上必要です。OpenAIの規約で10件未満のデータではジョブを実行できません）。またデータ量に応じてトークン数を算出し、コスト見積もりをしておくのも重要です
 
-#### 6.2 ファイルのアップロード（purpose="fine-tune"）
+#### 7.2 ファイルのアップロード（purpose="fine-tune"）
 ```python 
 # ファインチューニング用データセットをアップロード
 import os
@@ -522,7 +507,7 @@ print(client.File.list())
 # ファイル削除
 # print(client.File.delete(file_id))
 ```
-#### 6.3 ファインチューニングジョブの作成
+#### 7.3 ファインチューニングジョブの作成
 ```python
 #########6.3 ファインチューニングジョブの作成#########
 # ファインチューニングジョブの作成
@@ -540,7 +525,7 @@ print(client.FineTuningJob.list())
 # 特定ジョブの詳細はclient.FineTuningJob.retrieve(job_id)で取得できます。
 # print(client.FineTuningJob.retrieve(job_id))
 ```
-#### 6.4 ファインチューニング結果の確認とモデル名取得
+#### 7.4 ファインチューニング結果の確認とモデル名取得
 ```python
 #########6.4 ファインチューニング結果の確認とモデル名取得#########
 result = client.FineTuningJob.retrieve(job_id=job.id)
@@ -549,7 +534,7 @@ print(result.fine_tuned_model)
 # 出力例: ft:gpt-3.5-turbo-0613:my-org:custom-support-bot:7pO...（実際のモデル識別子）
 ```
 
-## 7. モデルのファインチューニングモデルの使用(カスタムモデルの使用)
+## 8. ファインチューニングモデルの使用 (カスタムモデル利用)
 ```python
 import os
 from openai import OpenAI
@@ -629,7 +614,7 @@ ft:gpt-3.5-turbo-1106:your-organization::xxxx
 | `babbage-002`        | 小型モデル。高速・軽量向けチューニング対象。                                |
 
 ---
-## 8. text_to_speech (TTS)文字⇒音声 と speech_to_text (STT)音声⇒テキスト
+## 9. text_to_speech (TTS) と speech_to_text (STT)
 >:warning:現在Responses API（openai.responses.create）にtoolsオプションで、
 "text_to_speech"または"speech_to_text"を設定できる設計が進められています。
 （ただし、2025年5月現在はベータ版、もしくは制限付き公開です）
@@ -727,8 +712,10 @@ response = client.responses.create(
 ---
 ---
 
-# 各種パラメータの選択肢と推奨設定
+# 10. Responses API 各種パラメータの選択肢と推奨設定
+
 ## Responses API 各種パラメータの選択肢と推奨設定
+
 モデル選択から出力制御まで、基本的なパラメータの意味や違い、使い分け
 
 ---
